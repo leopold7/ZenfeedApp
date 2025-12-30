@@ -72,6 +72,14 @@ android {
         debug {
             signingConfig = signingConfigs.getByName("release")
         }
+        create("dev") {
+            // 复制debug构建类型的配置
+            initWith(getByName("debug"))
+            // 为dev构建类型添加不同的包名，方便新功能调试
+            applicationIdSuffix = ".dev"
+            // dev构建类型使用默认的debug签名配置，不需要release密钥库
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
