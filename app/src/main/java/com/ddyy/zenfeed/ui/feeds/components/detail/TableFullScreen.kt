@@ -106,6 +106,7 @@ fun TableFullScreen(
                                 table {
                                     border-collapse: collapse;
                                     margin: 0;
+                                    color: ${if (isDarkTheme) "#E0E0E0" else "#000000"};
                                 }
                                 th, td {
                                     border: 1px solid ${if (isDarkTheme) "#444444" else "#CCCCCC"};
@@ -113,10 +114,18 @@ fun TableFullScreen(
                                     text-align: left;
                                     word-wrap: break-word;
                                     min-width: 80px;
+                                    color: ${if (isDarkTheme) "#E0E0E0" else "#000000"} !important;
+                                    background-color: inherit !important;
                                 }
                                 th {
-                                    background-color: ${if (isDarkTheme) "#2D2D2D" else "#F5F5F5"};
+                                    background-color: ${if (isDarkTheme) "#2D2D2D" else "#F5F5F5"} !important;
                                     font-weight: bold;
+                                    color: ${if (isDarkTheme) "#FFFFFF" else "#000000"} !important;
+                                }
+                                /* 确保表格内部所有元素都使用正确的颜色 */
+                                table * {
+                                    color: ${if (isDarkTheme) "#E0E0E0" else "#000000"} !important;
+                                    background-color: inherit !important;
                                 }
                                 img {
                                     max-width: 100%;

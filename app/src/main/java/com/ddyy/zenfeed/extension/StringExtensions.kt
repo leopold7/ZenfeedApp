@@ -214,13 +214,12 @@ fun String.toThemedHtml(isDarkTheme: Boolean): String {
                 }
                 
                 /* 处理可能存在的白色背景 */
-                [style*="background-color: white"],
-                [style*="background-color: #fff"],
-                [style*="background-color: #ffffff"],
-                [style*="background: white"],
-                [style*="background: #fff"],
-                [style*="background: #ffffff"] {
+                [style*="background"][style*="white"],
+                [style*="background"][style*="#fff"],
+                [style*="background"][style*="#ffffff"] {
                     background-color: #2D2D2D !important;
+                    background: #2D2D2D !important;
+                    background-image: none !important;
                 }
                 
                 /* 处理可能存在的黑色文字 */
@@ -229,6 +228,15 @@ fun String.toThemedHtml(isDarkTheme: Boolean): String {
                 [style*="color: #000000"] {
                     color: #E0E0E0 !important;
                 }
+
+                /* 其他 */
+                div, span, p, td {
+                    /* 确保所有容器默认继承正确的背景色 */
+                    background-color: inherit !important;
+                    background: inherit !important;
+                    background-image: none !important;
+                }
+                
             </style>
         </head>
         <body>
