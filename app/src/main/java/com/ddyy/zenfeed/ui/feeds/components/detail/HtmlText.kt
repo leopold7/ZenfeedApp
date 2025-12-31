@@ -13,11 +13,10 @@ import com.ddyy.zenfeed.extension.toThemedHtml
 @Composable
 fun HtmlText(
     html: String, 
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
     onTableClick: (String) -> Unit = {}
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
-    
     // 生成增强的HTML，为表格添加放大按钮
     val enhancedHtml = remember(html, isDarkTheme) {
         addTableZoomButtons(html, isDarkTheme, onTableClick)

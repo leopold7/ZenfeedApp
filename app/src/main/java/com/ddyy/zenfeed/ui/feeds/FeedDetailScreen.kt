@@ -53,6 +53,7 @@ fun FeedDetailScreen(
     allFeeds: List<Feed>,
     initialFeedIndex: Int = 0,
     onBack: () -> Unit,
+    isDarkTheme: Boolean,
     onOpenWebView: (String, String) -> Unit = { _, _ -> },
     onPlayPodcastList: ((List<Feed>, Int) -> Unit)? = null,
     onFeedChanged: (Feed) -> Unit = {},
@@ -241,6 +242,7 @@ fun FeedDetailScreen(
                             }
                         }
                     },
+                    isDarkTheme = isDarkTheme,
                     onScrollProgressChanged = { progress ->
                         scrollProgress = progress
                     },
@@ -260,6 +262,7 @@ fun FeedDetailScreen(
         TableFullScreen(
             tableHtml = currentTableHtml,
             title = currentTableTitle,
+            isDarkTheme = isDarkTheme,
             onBack = { showTableFullScreen = false }
         )
     }

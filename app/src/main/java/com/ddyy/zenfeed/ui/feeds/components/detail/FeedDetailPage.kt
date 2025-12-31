@@ -59,6 +59,7 @@ fun FeedDetailPage(
     onShowPlaylistDialog: (Boolean) -> Unit,
     isPlaying: Boolean,
     onPlayClick: () -> Unit,
+    isDarkTheme: Boolean,
     onScrollProgressChanged: (Float) -> Unit = {},
     onTableClick: (String, String) -> Unit = { _, _ -> },
     scrollToTopTrigger: Int = 0,
@@ -257,6 +258,7 @@ fun FeedDetailPage(
             Spacer(modifier = Modifier.height(16.dp))
             HtmlText(
                 html = feed.labels.summaryHtmlSnippet ?: "",
+                isDarkTheme = isDarkTheme,
                 onTableClick = { tableHtml ->
                     onTableClick(tableHtml, feed.labels.title.orDefaultTitle())
                 }

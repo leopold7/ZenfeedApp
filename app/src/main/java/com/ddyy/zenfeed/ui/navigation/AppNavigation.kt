@@ -6,6 +6,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +27,7 @@ import com.ddyy.zenfeed.ui.feeds.FeedDetailScreen
 import com.ddyy.zenfeed.ui.feeds.FeedsScreen
 import com.ddyy.zenfeed.ui.feeds.FeedsUiState
 import com.ddyy.zenfeed.ui.feeds.FeedsViewModel
+import com.ddyy.zenfeed.ui.theme.shouldUseDarkTheme
 import com.ddyy.zenfeed.ui.logging.LoggingScreen
 import com.ddyy.zenfeed.ui.player.PlayerViewModel
 import com.ddyy.zenfeed.ui.settings.SettingsScreen
@@ -293,6 +295,10 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 
                 Log.d("AppNavigation", "进入详情页，选中文章: ${selectedFeed.labels.title}, 计算索引: $initialIndex, 总文章数: ${allFeeds.size}")
                 
+                // 计算当前主题是否为暗色主题
+                val isSystemDark = isSystemInDarkTheme()
+                val isDarkTheme = shouldUseDarkTheme(currentThemeMode, isSystemDark)
+                
                 FeedDetailScreen(
                     allFeeds = allFeeds,
                     initialFeedIndex = initialIndex,
@@ -304,6 +310,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                         sharedViewModel.updateDetailPageStatus(false)
                         navController.popBackStack()
                     },
+                    isDarkTheme = isDarkTheme,
                     onOpenWebView = { url, title ->
                         sharedViewModel.setWebViewData(url, title)
                         navController.navigate("webview")

@@ -29,9 +29,9 @@ import com.ddyy.zenfeed.extension.toColorInt
 fun TableFullScreen(
     tableHtml: String,
     title: String,
+    isDarkTheme: Boolean,
     onBack: () -> Unit
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
     val context = LocalContext.current
     
     // 进入时设置为横屏
