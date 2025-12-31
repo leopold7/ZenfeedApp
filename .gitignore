@@ -17,3 +17,5 @@ local.properties
 /.trae/
 /.vscode/
 /.kotlin/
+/app/build/
+/app/release/
