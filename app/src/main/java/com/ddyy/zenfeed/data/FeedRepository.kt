@@ -351,7 +351,7 @@ class FeedRepository(private val context: Context) {
         return try {
             val apiService = ApiClient.getApiService(context)
             // 替换为你的 GitHub 用户名和仓库名
-            val url = "https://api.github.com/repos/xusonfan/zenfeedApp/releases/latest"
+            val url = "https://api.github.com/repos/leopold7/ZenfeedApp/releases/latest"
             val latestRelease = apiService.getLatestRelease(url)
 
             // 比较版本号
