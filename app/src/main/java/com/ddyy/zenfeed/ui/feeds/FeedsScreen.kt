@@ -83,7 +83,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.extension.getLastReadFeedIndex
-import com.ddyy.zenfeed.extension.groupByCategory
+import com.ddyy.zenfeed.extension.groupByMode
 import com.ddyy.zenfeed.ui.UpdateManager
 import com.ddyy.zenfeed.ui.feeds.components.common.FeedItem
 import com.ddyy.zenfeed.ui.feeds.components.dialog.UpdateDialog
@@ -127,6 +127,11 @@ fun FeedsScreen(
     val newContentCount = feedsViewModel.newContentCount
     val shouldShowNoNewContent = feedsViewModel.shouldShowNoNewContent
     val errorMessage = feedsViewModel.errorMessage
+    val groupingMode = feedsViewModel.groupingMode
+    val categoryFilterType = feedsViewModel.categoryFilterType
+    val categoryBlacklist = feedsViewModel.categoryBlacklist
+    val categoryWhitelist = feedsViewModel.categoryWhitelist
+    val filterIncludeAll = feedsViewModel.filterIncludeAll
     val onRefresh = { feedsViewModel.refreshFeeds() }
     val onCategorySelected = { category: String -> feedsViewModel.selectCategory(category) }
 
@@ -185,6 +190,12 @@ fun FeedsScreen(
         },
         cacheSize = feedsViewModel.cacheSize,
         onClearCacheClick = { feedsViewModel.clearCache() },
+        groupingMode = feedsViewModel.groupingMode,
+        categoryFilterType = feedsViewModel.categoryFilterType,
+        categoryBlacklist = feedsViewModel.categoryBlacklist,
+        categoryWhitelist = feedsViewModel.categoryWhitelist,
+        filterIncludeAll = feedsViewModel.filterIncludeAll,
+        onAddToBlacklist = { category -> feedsViewModel.addToBlacklist(category) },
         modifier = modifier
     )
 }
@@ -231,7 +242,13 @@ fun FeedsScreenContent(
     searchLimit: Int,
     onSearchLimitChanged: (Int) -> Unit,
     cacheSize: String,
-    onClearCacheClick: () -> Unit
+    onClearCacheClick: () -> Unit,
+    groupingMode: String = "category",
+    categoryFilterType: String = "none",
+    categoryBlacklist: Set<String> = emptySet(),
+    categoryWhitelist: Set<String> = emptySet(),
+    filterIncludeAll: Boolean = true,
+    onAddToBlacklist: (String) -> Unit = {}
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
@@ -443,20 +460,8 @@ fun FeedsScreenContent(
                                     if (isPlaying) {
                                         service.pause()
                                     } else {
-                                        if (currentPlayingFeed != null) {
-                                            // 如果有当前播放的播客，恢复播放
-                                            service.resume()
-                                        } else {
-                                            // 否则播放第一个有效播客
-                                            (feedsUiState as? FeedsUiState.Success)?.feeds?.let { feeds ->
-                                                val firstPodcastFeed =
-                                                    feeds.find { !it.labels.podcastUrl.isNullOrBlank() }
-                                                if (firstPodcastFeed != null) {
-                                                    val feedIndex = feeds.indexOf(firstPodcastFeed)
-                                                    onPlayPodcastList?.invoke(feeds, feedIndex)
-                                                }
-                                            }
-                                        }
+                                        // 恢复播放当前播客
+                                        service.resume()
                                     }
                                 }
                             }) {
@@ -753,6 +758,7 @@ fun FeedsScreenContent(
                         }
 
                         // 分类 Tab
+                        // 分类 Tab
                         CategoryTabs(
                             pagerState = pagerState,
                             categories = feedsUiState.categories,
@@ -817,7 +823,8 @@ fun FeedsScreenContent(
                                 }
                             },
                             onTimeRangeSelected = onTimeRangeSelected,
-                            selectedTimeRangeHours = selectedTimeRangeHours
+                            selectedTimeRangeHours = selectedTimeRangeHours,
+                            onAddToBlacklist = onAddToBlacklist
                         )
 
                         // 观察播放状态
@@ -829,9 +836,9 @@ fun FeedsScreenContent(
                             playerViewModel?.getCurrentPlaylist() ?: emptyList()
                         }
 
-                        // 预先按分类对 feeds 进行分组，避免在 Pager 内部进行昂贵的过滤操作
-                        val categorizedFeeds = remember(feedsUiState.feeds) {
-                            feedsUiState.feeds.groupByCategory()
+                        // 预先按分组模式对 feeds 进行分组，避免在 Pager 内部进行昂贵的过滤操作
+                        val categorizedFeeds = remember(feedsUiState.feeds, groupingMode, categoryFilterType, categoryBlacklist, categoryWhitelist, filterIncludeAll) {
+                            feedsUiState.feeds.groupByMode(groupingMode, categoryFilterType, categoryBlacklist, categoryWhitelist, filterIncludeAll)
                         }
 
                         // 处理返回时的滚动定位 - 检测页面重新进入
