@@ -15,11 +15,20 @@ fun HtmlText(
     html: String, 
     isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
-    onTableClick: (String) -> Unit = {}
+    onTableClick: (String) -> Unit = {},
+    imageCacheEnabled: Boolean = true
 ) {
-    // 生成增强的HTML，为表格添加放大按钮
-    val enhancedHtml = remember(html, isDarkTheme) {
-        addTableZoomButtons(html, isDarkTheme, onTableClick)
+    // 生成增强的HTML，为表格添加放大按钮，并根据imageCacheEnabled决定是否移除图片
+    val processedHtml = remember(html, imageCacheEnabled) {
+        if (imageCacheEnabled) {
+            html
+        } else {
+            html.replace(Regex("<img[^>]*>"), "")
+        }
+    }
+    
+    val enhancedHtml = remember(processedHtml, isDarkTheme) {
+        addTableZoomButtons(processedHtml, isDarkTheme, onTableClick)
     }
 
     AndroidView(

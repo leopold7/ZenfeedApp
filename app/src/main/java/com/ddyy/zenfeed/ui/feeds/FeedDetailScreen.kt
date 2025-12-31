@@ -58,6 +58,7 @@ fun FeedDetailScreen(
     onPlayPodcastList: ((List<Feed>, Int) -> Unit)? = null,
     onFeedChanged: (Feed) -> Unit = {},
     category: String? = null,
+    imageCacheEnabled: Boolean = true,
 ) {
     // 如果没有feeds数据，显示空状态
     if (allFeeds.isEmpty()) {
@@ -266,6 +267,7 @@ fun FeedDetailScreen(
                         showTableFullScreen = true
                     },
                     scrollToTopTrigger = scrollToTopTrigger,
+                    imageCacheEnabled = imageCacheEnabled,
                 )
             }
         }

@@ -295,14 +295,27 @@ fun String.toThemedHtml(isDarkTheme: Boolean): String {
 }
 
 /**
- * 获取显示内容，优先使用HTML片段，否则使用摘要
+ * 获取用于显示的内容，优先使用HTML摘要片段，其次使用纯文本摘要
+ * @param summary 纯文本摘要
+ * @param imageCacheEnabled 是否文章显示图片，如果为false则删除图片标签
  */
-fun String?.getDisplayContent(summary: String?): String {
+fun String?.getDisplayContent(summary: String?, imageCacheEnabled: Boolean = true): String {
     val content = this?.takeIf { it.isNotBlank() }
         ?: summary?.takeIf { it.isNotBlank() }
         ?: ""
     
-    return content.cleanHtmlTags()
+    return if (imageCacheEnabled) {
+        content.cleanHtmlTags()
+    } else {
+        content.removeImages().cleanHtmlTags()
+    }
+}
+
+/**
+ * 移除HTML内容中的图片标签
+ */
+fun String.removeImages(): String {
+    return this.replace(Regex("<img[^>]*>"), "")
 }
 
 /**

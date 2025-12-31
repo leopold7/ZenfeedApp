@@ -63,6 +63,7 @@ fun FeedDetailPage(
     onScrollProgressChanged: (Float) -> Unit = {},
     onTableClick: (String, String) -> Unit = { _, _ -> },
     scrollToTopTrigger: Int = 0,
+    imageCacheEnabled: Boolean = true,
 ) {
     // 滚动状态
     val listState = rememberLazyListState()
@@ -261,7 +262,8 @@ fun FeedDetailPage(
                 isDarkTheme = isDarkTheme,
                 onTableClick = { tableHtml ->
                     onTableClick(tableHtml, feed.labels.title.orDefaultTitle())
-                }
+                },
+                imageCacheEnabled = imageCacheEnabled
             )
         }
     }

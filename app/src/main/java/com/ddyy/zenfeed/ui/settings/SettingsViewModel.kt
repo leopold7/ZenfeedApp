@@ -30,13 +30,13 @@ data class SettingsUiState(
     val categoryBlacklist: Set<String> = emptySet(),
     val categoryWhitelist: Set<String> = emptySet(),
     val filterIncludeAll: Boolean = true,
+    val imageCacheEnabled: Boolean = true,
     val aiApiUrl: String = "",
     val aiApiKey: String = "",
     val aiModelName: String = "",
     val aiPrompt: String = "",
     val isLoading: Boolean = false,
-    val message: String = ""
-)
+    val message: String = "")
 
 /**
  * 设置页面的ViewModel
@@ -64,6 +64,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentCategoryBlacklist = mutableSetOf<String>()
     private var currentCategoryWhitelist = mutableSetOf<String>()
     private var currentFilterIncludeAll = true
+    private var currentImageCacheEnabled = true
     private var currentAiApiUrl = ""
     private var currentAiApiKey = ""
     private var currentAiModelName = ""
@@ -94,6 +95,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val categoryBlacklist = settingsDataStore.categoryBlacklist.first()
                 val categoryWhitelist = settingsDataStore.categoryWhitelist.first()
                 val filterIncludeAll = settingsDataStore.filterIncludeAll.first()
+                val imageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
             _uiState.value = _uiState.value.copy(
                 apiUrl = apiUrl,
                 backendUrl = backendUrl,
@@ -110,6 +112,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 categoryBlacklist = categoryBlacklist,
                 categoryWhitelist = categoryWhitelist,
                 filterIncludeAll = filterIncludeAll,
+                imageCacheEnabled = imageCacheEnabled,
                 aiApiUrl = settingsDataStore.aiApiUrl.first(),
                 aiApiKey = settingsDataStore.aiApiKey.first(),
                 aiModelName = settingsDataStore.aiModelName.first(),
@@ -122,6 +125,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             currentCategoryBlacklist = categoryBlacklist.toMutableSet()
             currentCategoryWhitelist = categoryWhitelist.toMutableSet()
             currentFilterIncludeAll = filterIncludeAll
+            currentImageCacheEnabled = imageCacheEnabled
                 
                 if (currentInputApiUrl.isEmpty()) {
                     currentInputApiUrl = apiUrl
@@ -273,6 +277,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun updateFilterIncludeAll(includeAll: Boolean) {
         currentFilterIncludeAll = includeAll
+    }
+    
+    /**
+     * 更新图片缓存启用状态
+     * @param enabled 是否文章显示图片
+     */
+    fun updateImageCacheEnabled(enabled: Boolean) {
+        currentImageCacheEnabled = enabled
     }
     
     /**
@@ -560,6 +572,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 settingsDataStore.saveCategoryBlacklist(filteredBlacklist)
                 settingsDataStore.saveCategoryWhitelist(filteredWhitelist)
                 settingsDataStore.saveFilterIncludeAll(currentFilterIncludeAll)
+                settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
                 
                 showMessage("分组过滤设置已保存")
                 
@@ -649,6 +662,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             currentCategoryBlacklist = SettingsDataStore.DEFAULT_CATEGORY_BLACKLIST.toMutableSet()
             currentCategoryWhitelist = SettingsDataStore.DEFAULT_CATEGORY_WHITELIST.toMutableSet()
             currentFilterIncludeAll = SettingsDataStore.DEFAULT_FILTER_INCLUDE_ALL
+            currentImageCacheEnabled = SettingsDataStore.DEFAULT_IMAGE_CACHE_ENABLED
             currentAiApiUrl = SettingsDataStore.DEFAULT_AI_API_URL
             currentAiApiKey = SettingsDataStore.DEFAULT_AI_API_KEY
             currentAiModelName = SettingsDataStore.DEFAULT_AI_MODEL_NAME

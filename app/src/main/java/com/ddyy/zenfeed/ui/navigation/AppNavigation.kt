@@ -344,7 +344,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                             sharedViewModel.updateAllFeeds(currentFeedsState.feeds)
                         }
                     },
-                    category = sharedViewModel.detailEntryCategory
+                    category = sharedViewModel.detailEntryCategory,
+                    imageCacheEnabled = feedsViewModel.imageCacheEnabled
                 )
             }
         }

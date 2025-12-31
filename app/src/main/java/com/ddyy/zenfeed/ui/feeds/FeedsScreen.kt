@@ -132,6 +132,7 @@ fun FeedsScreen(
     val categoryBlacklist = feedsViewModel.categoryBlacklist
     val categoryWhitelist = feedsViewModel.categoryWhitelist
     val filterIncludeAll = feedsViewModel.filterIncludeAll
+    val imageCacheEnabled = feedsViewModel.imageCacheEnabled
     val onRefresh = { feedsViewModel.refreshFeeds() }
     val onCategorySelected = { category: String -> feedsViewModel.selectCategory(category) }
 
@@ -195,6 +196,7 @@ fun FeedsScreen(
         categoryBlacklist = feedsViewModel.categoryBlacklist,
         categoryWhitelist = feedsViewModel.categoryWhitelist,
         filterIncludeAll = feedsViewModel.filterIncludeAll,
+        imageCacheEnabled = feedsViewModel.imageCacheEnabled,
         onAddToBlacklist = { category -> feedsViewModel.addToBlacklist(category) },
         modifier = modifier
     )
@@ -248,6 +250,7 @@ fun FeedsScreenContent(
     categoryBlacklist: Set<String> = emptySet(),
     categoryWhitelist: Set<String> = emptySet(),
     filterIncludeAll: Boolean = true,
+    imageCacheEnabled: Boolean = true,
     onAddToBlacklist: (String) -> Unit = {}
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -1095,7 +1098,8 @@ fun FeedsScreenContent(
                                                     { playerViewModel?.togglePlayPause() }
                                                 } else null,
                                                 isCurrentlyPlaying = isCurrentlyPlaying,
-                                                isPlaying = isPlaying)
+                                                isPlaying = isPlaying,
+                                                imageCacheEnabled = imageCacheEnabled)
                                         }
                                     }
                                 }

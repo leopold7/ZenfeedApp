@@ -148,6 +148,7 @@ fun SettingsScreen(
                 categoryBlacklist = uiState.categoryBlacklist,
                 categoryWhitelist = uiState.categoryWhitelist,
                 filterIncludeAll = uiState.filterIncludeAll,
+                imageCacheEnabled = uiState.imageCacheEnabled,
                 isLoading = uiState.isLoading,
                 onHomeGroupingModeChange = {
                     settingsViewModel.updateHomeGroupingMode(it)
@@ -157,6 +158,7 @@ fun SettingsScreen(
                 onCategoryBlacklistChange = settingsViewModel::updateCategoryBlacklist,
                 onCategoryWhitelistChange = settingsViewModel::updateCategoryWhitelist,
                 onFilterIncludeAllChange = settingsViewModel::updateFilterIncludeAll,
+                onImageCacheEnabledChange = settingsViewModel::updateImageCacheEnabled,
                 onSaveCategoryFilterSettings = settingsViewModel::saveCategoryFilterSettings
             )
             
@@ -688,12 +690,14 @@ private fun PersonalizationSettingsCard(
     categoryBlacklist: Set<String>,
     categoryWhitelist: Set<String>,
     filterIncludeAll: Boolean,
+    imageCacheEnabled: Boolean,
     isLoading: Boolean,
     onHomeGroupingModeChange: (String) -> Unit,
     onCategoryFilterTypeChange: (String) -> Unit,
     onCategoryBlacklistChange: (MutableSet<String>) -> Unit,
     onCategoryWhitelistChange: (MutableSet<String>) -> Unit,
     onFilterIncludeAllChange: (Boolean) -> Unit,
+    onImageCacheEnabledChange: (Boolean) -> Unit,
     onSaveCategoryFilterSettings: () -> Unit
 ) {
     Card(
@@ -715,6 +719,26 @@ private fun PersonalizationSettingsCard(
                 ),
                 color = MaterialTheme.colorScheme.onSurface
             )
+
+            // 图片缓存开关
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "文章显示图片",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = imageCacheEnabled,
+                    onCheckedChange = {
+                        onImageCacheEnabledChange(it)
+                        onSaveCategoryFilterSettings()
+                    },
+                    enabled = !isLoading
+                )
+            }
 
             Column {
                 Text(

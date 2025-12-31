@@ -60,7 +60,8 @@ fun FeedItem(
     onPlayPodcastList: (() -> Unit)? = null,
     onTogglePlayPause: (() -> Unit)? = null,
     isCurrentlyPlaying: Boolean = false,
-    isPlaying: Boolean = false
+    isPlaying: Boolean = false,
+    imageCacheEnabled: Boolean = true
 ) {
     val context = LocalContext.current
     val faviconManager = remember { (context.applicationContext as ZenFeedApplication).faviconManager }
@@ -174,10 +175,9 @@ fun FeedItem(
                     )
 
                     // 摘要内容处理 - 优化HTML处理性能
-                    val displayContent =
-                        remember(feed.labels.summaryHtmlSnippet, feed.labels.summary) {
-                            feed.labels.summaryHtmlSnippet.getDisplayContent(feed.labels.summary)
-                        }
+                    val displayContent = remember(feed.labels.summaryHtmlSnippet, feed.labels.summary, imageCacheEnabled) {
+                        feed.labels.summaryHtmlSnippet.getDisplayContent(feed.labels.summary, imageCacheEnabled)
+                    }
 
                     // 显示摘要
                     if (displayContent.isNotEmpty()) {

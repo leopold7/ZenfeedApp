@@ -38,6 +38,7 @@ class SettingsDataStore(private val context: Context) {
         private val CATEGORY_BLACKLIST_KEY = stringSetPreferencesKey("category_blacklist")
         private val CATEGORY_WHITELIST_KEY = stringSetPreferencesKey("category_whitelist")
         private val FILTER_INCLUDE_ALL_KEY = booleanPreferencesKey("filter_include_all")
+        private val IMAGE_CACHE_ENABLED_KEY = booleanPreferencesKey("image_cache_enabled")
         
         // AI模型配置相关的键
         private val AI_API_URL_KEY = stringPreferencesKey("ai_api_url")
@@ -68,7 +69,8 @@ class SettingsDataStore(private val context: Context) {
         const val DEFAULT_CATEGORY_FILTER_TYPE = "none" // 可以是 "none", "blacklist", "whitelist"
         val DEFAULT_CATEGORY_BLACKLIST: Set<String> = emptySet()
         val DEFAULT_CATEGORY_WHITELIST: Set<String> = emptySet()
-        const val DEFAULT_FILTER_INCLUDE_ALL = true // 是否在"全部"分组中应用过滤
+        const val DEFAULT_FILTER_INCLUDE_ALL = true
+        const val DEFAULT_IMAGE_CACHE_ENABLED = true // 是否在"全部"分组中应用过滤
         
         // 默认的AI模型配置
         const val DEFAULT_AI_API_URL = "https://api.openai.com/v1"
@@ -210,8 +212,18 @@ class SettingsDataStore(private val context: Context) {
      * 获取分类黑名单的Flow
      */
     val categoryBlacklist: Flow<Set<String>> = context.settingsDataStore.data
-        .map { preferences ->
+        .map {
+            preferences ->
             preferences[CATEGORY_BLACKLIST_KEY] ?: DEFAULT_CATEGORY_BLACKLIST
+        }
+    
+    /**
+     * 获取图片缓存是否启用的Flow
+     */
+    val imageCacheEnabled: Flow<Boolean> = context.settingsDataStore.data
+        .map {
+            preferences ->
+            preferences[IMAGE_CACHE_ENABLED_KEY] ?: DEFAULT_IMAGE_CACHE_ENABLED
         }
     
     /**
@@ -404,6 +416,16 @@ class SettingsDataStore(private val context: Context) {
     }
     
     /**
+     * 保存图片缓存启用状态
+     * @param enabled 是否文章显示图片
+     */
+    suspend fun saveImageCacheEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[IMAGE_CACHE_ENABLED_KEY] = enabled
+        }
+    }
+    
+    /**
      * 获取当前保存的API基础地址（同步方式，用于初始化）
      * @return 当前保存的API基础地址，如果没有则返回默认地址
      */
@@ -448,6 +470,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[CATEGORY_BLACKLIST_KEY] = DEFAULT_CATEGORY_BLACKLIST
             preferences[CATEGORY_WHITELIST_KEY] = DEFAULT_CATEGORY_WHITELIST
             preferences[FILTER_INCLUDE_ALL_KEY] = DEFAULT_FILTER_INCLUDE_ALL
+            preferences[IMAGE_CACHE_ENABLED_KEY] = DEFAULT_IMAGE_CACHE_ENABLED
             preferences[AI_API_URL_KEY] = DEFAULT_AI_API_URL
             preferences[AI_API_KEY_KEY] = DEFAULT_AI_API_KEY
             preferences[AI_MODEL_NAME_KEY] = DEFAULT_AI_MODEL_NAME

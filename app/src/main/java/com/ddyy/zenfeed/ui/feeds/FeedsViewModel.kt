@@ -111,6 +111,9 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     // 是否在"全部"分组中应用过滤
     var filterIncludeAll: Boolean by mutableStateOf(true) // 默认在"全部"分组中应用过滤
     
+    // 是否文章显示图片
+    var imageCacheEnabled: Boolean by mutableStateOf(true) // 默认文章显示图片
+    
     // 监听分组模式变化，更新Feed列表
     private val _groupingModeFlow = MutableStateFlow(groupingMode)
     
@@ -176,6 +179,16 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         
+        // 持续监听图片缓存设置变化
+        viewModelScope.launch {
+            settingsDataStore.imageCacheEnabled.collect {
+                if (imageCacheEnabled != it) {
+                    imageCacheEnabled = it
+                    Log.d("FeedsViewModel", "图片缓存设置已更新: $it")
+                }
+            }
+        }
+        
         // 监听_groupingModeFlow变化，更新Feed列表
         viewModelScope.launch {
             _groupingModeFlow.collect {
@@ -191,18 +204,21 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             val initialFilterType = settingsDataStore.categoryFilterType.first()
             val initialFilterIncludeAll = settingsDataStore.filterIncludeAll.first()
             val initialGroupingMode = settingsDataStore.homeGroupingMode.first()
+            val initialImageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
 
             categoryBlacklist = initialBlacklist
             categoryWhitelist = initialWhitelist
             categoryFilterType = initialFilterType
             filterIncludeAll = initialFilterIncludeAll
             groupingMode = initialGroupingMode
+            imageCacheEnabled = initialImageCacheEnabled
             _groupingModeFlow.value = initialGroupingMode
 
             Log.d("FeedsViewModel", "初始分类黑名单已加载: $initialBlacklist")
             Log.d("FeedsViewModel", "初始分类白名单已加载: $initialWhitelist")
             Log.d("FeedsViewModel", "初始过滤类型已加载: $initialFilterType")
             Log.d("FeedsViewModel", "初始分组模式已加载: $initialGroupingMode")
+            Log.d("FeedsViewModel", "初始图片缓存设置已加载: $initialImageCacheEnabled")
 
             loadReadFeedIds()
             loadSearchHistory()
