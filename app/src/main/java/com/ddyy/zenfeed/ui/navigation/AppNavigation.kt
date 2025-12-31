@@ -343,7 +343,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                         if (currentFeedsState is FeedsUiState.Success) {
                             sharedViewModel.updateAllFeeds(currentFeedsState.feeds)
                         }
-                    }
+                    },
+                    category = sharedViewModel.detailEntryCategory
                 )
             }
         }

@@ -57,6 +57,7 @@ fun FeedDetailScreen(
     onOpenWebView: (String, String) -> Unit = { _, _ -> },
     onPlayPodcastList: ((List<Feed>, Int) -> Unit)? = null,
     onFeedChanged: (Feed) -> Unit = {},
+    category: String? = null,
 ) {
     // 如果没有feeds数据，显示空状态
     if (allFeeds.isEmpty()) {
@@ -230,11 +231,24 @@ fun FeedDetailScreen(
                                 } else {
                                     // 优先使用播放列表功能，如果没有提供则使用单曲播放
                                     if (onPlayPodcastList != null) {
-                                        // 使用全部feeds作为播放列表，从当前feed开始播放
-                                        val currentIndex = allFeeds.indexOfFirst {
+                                        // 根据category过滤播放列表
+                                        val filteredFeeds = if (category != null && category.isNotEmpty()) {
+                                            allFeeds.filter { feed ->
+                                                // 根据category过滤
+                                                when {
+                                                    feed.labels.category == category -> true
+                                                    feed.labels.source == category -> true
+                                                    else -> false
+                                                }
+                                            }
+                                        } else {
+                                            allFeeds
+                                        }
+                                        // 使用过滤后的feeds作为播放列表，从当前feed开始播放
+                                        val currentIndex = filteredFeeds.indexOfFirst {
                                             it.labels.podcastUrl == allFeeds[page].labels.podcastUrl && !allFeeds[page].labels.podcastUrl.isNullOrBlank()
-                                        }.takeIf { it >= 0 } ?: page
-                                        onPlayPodcastList(allFeeds, currentIndex)
+                                        }.takeIf { it >= 0 } ?: 0
+                                        onPlayPodcastList(filteredFeeds, currentIndex)
                                     } else {
                                         service.play(allFeeds[page])
                                     }

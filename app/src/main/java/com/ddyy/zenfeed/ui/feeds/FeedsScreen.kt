@@ -1086,8 +1086,8 @@ fun FeedsScreenContent(
                                                 onPlayPodcastList = if (!feed.labels.podcastUrl.isNullOrBlank()) {
                                                     {
                                                         onPlayPodcastList?.invoke(
-                                                            feedsUiState.feeds,
-                                                            feedsUiState.feeds.indexOf(feed)
+                                                            feedsForCategory,
+                                                            feedsForCategory.indexOf(feed)
                                                         )
                                                     }
                                                 } else null,
