@@ -166,8 +166,8 @@ fun AboutScreen(
             InfoCard(
                icon = Icons.Default.Code,
                title = "开发与致谢",
-               content = "本应用使用 Kotlin 和 Jetpack Compose 开发，采用现代化的 Android 开发技术栈，为用户提供流畅的使用体验。\n\n技术栈：\n• Kotlin\n• Jetpack Compose\n• Material Design 3\n• MVVM 架构\n• Coroutines\n\n本应用同样开源，源码地址：\nhttps://github.com/xusonfan/zenfeedApp\n\n后端服务由 glidea 开发的开源项目 zenfeed 强力驱动，在此表示特别感谢。\n后端项目地址: https://github.com/glidea/zenfeed"
-           )
+               content = "本应用使用 Kotlin 和 Jetpack Compose 开发，采用现代化的 Android 开发技术栈，为用户提供流畅的使用体验。\n\n技术栈：\n• Kotlin\n• Jetpack Compose\n• Material Design 3\n• MVVM 架构\n• Coroutines\n\n本应用 fork 于 xusonfan/zenfeedApp ，源码地址：\nhttps://github.com/xusonfan/zenfeedApp\n\n本应用源码地址：\nhttps://github.com/leopold7/zenfeedApp\n\n后端服务由 glidea 开发的开源项目 zenfeed 强力驱动，在此表示特别感谢。\n后端项目地址: https://github.com/glidea/zenfeed"
+            )
             
             // 底部空间
             Spacer(modifier = Modifier.height(16.dp))
