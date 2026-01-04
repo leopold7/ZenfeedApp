@@ -51,8 +51,7 @@ fun CategoryTabs(
     modifier: Modifier = Modifier,
     onTabDoubleClick: (Int) -> Unit = {},
     onTimeRangeSelected: (Int) -> Unit,
-    selectedTimeRangeHours: Int,
-    onAddToBlacklist: (String) -> Unit = {}
+    selectedTimeRangeHours: Int
 ) {
     // 使用remember监听categories变化，确保tab栏与数据同步
     val allCategories = remember(categories) { listOf("全部") + categories }
@@ -231,7 +230,6 @@ fun CategoryTabs(
             DropdownMenuItem(
                 text = { Text("隐藏") },
                 onClick = {
-                    onAddToBlacklist(longPressedCategory)
                     longPressMenuExpanded = false
                 },
                 leadingIcon = {

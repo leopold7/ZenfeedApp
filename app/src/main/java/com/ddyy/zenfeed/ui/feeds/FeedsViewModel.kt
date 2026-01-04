@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ddyy.zenfeed.data.CategoryFilterConfig
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.FeedRepository
 import com.ddyy.zenfeed.data.ServerConfig
@@ -21,7 +22,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 sealed interface FeedsUiState {
-    data class Success(val feeds: List<Feed>, val categories: List<String>) : FeedsUiState
+    data class Success(val feeds: List<Feed>, val allFeeds: List<Feed>, val categories: List<String>) : FeedsUiState
     data object Error : FeedsUiState
     data object Loading : FeedsUiState
 }
@@ -68,6 +69,9 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     // 原始的完整Feed列表
     private var allFeeds: List<Feed> = emptyList()
     
+    // 公共访问器，用于获取完整的Feed列表
+    val fullFeeds: List<Feed> get() = allFeeds
+    
     // 已读文章的标识符集合（使用标题+时间作为唯一标识）
     private val readFeedIds = mutableSetOf<String>()
     
@@ -100,17 +104,8 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     // 首页分组模式
     var groupingMode: String by mutableStateOf("category") // 默认按分类
     
-    // 分类过滤类型
-    var categoryFilterType: String by mutableStateOf("none") // 默认无过滤
-    
-    // 分类黑名单
-    var categoryBlacklist: Set<String> by mutableStateOf(emptySet())
-    
-    // 分类白名单
-    var categoryWhitelist: Set<String> by mutableStateOf(emptySet())
-    
-    // 是否在"全部"分组中应用过滤
-    var filterIncludeAll: Boolean by mutableStateOf(true) // 默认在"全部"分组中应用过滤
+    // 分类过滤配置列表
+    var categoryFilterConfigs: List<CategoryFilterConfig> by mutableStateOf(emptyList())
     
     // 是否文章显示图片
     var imageCacheEnabled: Boolean by mutableStateOf(true) // 默认文章显示图片
@@ -140,46 +135,13 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         
-        // 持续监听过滤类型变化
+        // 持续监听分类过滤配置变化
         viewModelScope.launch {
-            settingsDataStore.categoryFilterType.collect {
-                if (categoryFilterType != it) {
-                    categoryFilterType = it
+            settingsDataStore.categoryFilterConfigs.collect {
+                if (categoryFilterConfigs != it) {
+                    categoryFilterConfigs = it
                     updateFilteredFeeds()
-                    Log.d("FeedsViewModel", "过滤类型已更新: $it")
-                }
-            }
-        }
-        
-        // 持续监听黑名单变化
-        viewModelScope.launch {
-            settingsDataStore.categoryBlacklist.collect {
-                if (categoryBlacklist != it) {
-                    categoryBlacklist = it
-                    updateFilteredFeeds()
-                    Log.d("FeedsViewModel", "分类黑名单已更新: $it")
-                }
-            }
-        }
-        
-        // 持续监听白名单变化
-        viewModelScope.launch {
-            settingsDataStore.categoryWhitelist.collect {
-                if (categoryWhitelist != it) {
-                    categoryWhitelist = it
-                    updateFilteredFeeds()
-                    Log.d("FeedsViewModel", "分类白名单已更新: $it")
-                }
-            }
-        }
-        
-        // 持续监听过滤包含全部设置变化
-        viewModelScope.launch {
-            settingsDataStore.filterIncludeAll.collect {
-                if (filterIncludeAll != it) {
-                    filterIncludeAll = it
-                    updateFilteredFeeds()
-                    Log.d("FeedsViewModel", "过滤包含全部设置已更新: $it")
+                    Log.d("FeedsViewModel", "分类过滤配置已更新: ${it.size} 个配置")
                 }
             }
         }
@@ -216,26 +178,18 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
         // 加载初始数据和设置
         viewModelScope.launch {
             // 1. 从DataStore获取初始设置
-            val initialBlacklist = settingsDataStore.categoryBlacklist.first()
-            val initialWhitelist = settingsDataStore.categoryWhitelist.first()
-            val initialFilterType = settingsDataStore.categoryFilterType.first()
-            val initialFilterIncludeAll = settingsDataStore.filterIncludeAll.first()
+            val initialConfigs = settingsDataStore.categoryFilterConfigs.first()
             val initialGroupingMode = settingsDataStore.homeGroupingMode.first()
             val initialImageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
             val initialServerConfigs = settingsDataStore.serverConfigs.first()
 
-            categoryBlacklist = initialBlacklist
-            categoryWhitelist = initialWhitelist
-            categoryFilterType = initialFilterType
-            filterIncludeAll = initialFilterIncludeAll
+            categoryFilterConfigs = initialConfigs
             groupingMode = initialGroupingMode
             imageCacheEnabled = initialImageCacheEnabled
             serverConfigs = initialServerConfigs
             _groupingModeFlow.value = initialGroupingMode
 
-            Log.d("FeedsViewModel", "初始分类黑名单已加载: $initialBlacklist")
-            Log.d("FeedsViewModel", "初始分类白名单已加载: $initialWhitelist")
-            Log.d("FeedsViewModel", "初始过滤类型已加载: $initialFilterType")
+            Log.d("FeedsViewModel", "初始分类过滤配置已加载: ${initialConfigs.size} 个配置")
             Log.d("FeedsViewModel", "初始分组模式已加载: $initialGroupingMode")
             Log.d("FeedsViewModel", "初始图片缓存设置已加载: $initialImageCacheEnabled")
             Log.d("FeedsViewModel", "初始服务器配置已加载: ${initialServerConfigs.size} 个服务器")
@@ -249,26 +203,29 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
-     * 添加分类到黑名单
+     * 更新分类过滤配置中某个分类的设置
      */
-    fun addToBlacklist(category: String) {
-        viewModelScope.launch {
-            val newBlacklist = categoryBlacklist + category
-            categoryBlacklist = newBlacklist
-            settingsDataStore.saveCategoryBlacklist(newBlacklist)
-            Log.d("FeedsViewModel", "分类已添加到黑名单: $category")
+    fun updateCategoryConfig(categoryName: String, showInAll: Boolean? = null, showGroup: Boolean? = null) {
+        val updatedConfigs = categoryFilterConfigs.map { config ->
+            if (config.categoryName == categoryName) {
+                config.copy(
+                    showInAll = showInAll ?: config.showInAll,
+                    showGroup = showGroup ?: config.showGroup
+                )
+            } else {
+                config
+            }
         }
+        categoryFilterConfigs = updatedConfigs
     }
     
     /**
-     * 从黑名单中移除分类
+     * 保存分类过滤配置
      */
-    fun removeFromBlacklist(category: String) {
+    fun saveCategoryFilterConfigs() {
         viewModelScope.launch {
-            val newBlacklist = categoryBlacklist - category
-            categoryBlacklist = newBlacklist
-            settingsDataStore.saveCategoryBlacklist(newBlacklist)
-            Log.d("FeedsViewModel", "分类已从黑名单中移除: $category")
+            settingsDataStore.saveCategoryFilterConfigs(categoryFilterConfigs)
+            Log.d("FeedsViewModel", "分类过滤配置已保存: ${categoryFilterConfigs.size} 个配置")
         }
     }
 
@@ -571,93 +528,140 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
      * 更新筛选后的Feed列表
      */
     private fun updateFilteredFeeds() {
-        // 为所有Feed设置正确的阅读状态并按时间倒序排序
         val feedsWithReadStatus = allFeeds
             .map { feed ->
                 feed.copy(isRead = isFeedRead(feed))
             }
             .sortedWith(compareByDescending<Feed> {
-                // 主要排序：按时间倒序
                 parseTimeToLong(it.time)
             }.thenBy {
-                // 次要排序：相同时间时按标题字母顺序，确保稳定性
                 it.labels.title ?: "未知标题"
             })
         
-        // 过滤函数，根据过滤类型决定是否显示某个分组
+        fun getConfigForCategory(category: String?): CategoryFilterConfig? {
+            if (category == null) return null
+            return categoryFilterConfigs.find { it.categoryName == category }
+        }
+        
         fun shouldShowGroup(group: String): Boolean {
-            val result = com.ddyy.zenfeed.extension.FeedFilterHelper.shouldShowGroup(
-                group,
-                categoryFilterType,
-                categoryBlacklist,
-                categoryWhitelist
-            )
-            Log.d("FeedsViewModel", "分组过滤: 分组=$group, 过滤类型=$categoryFilterType, 白名单=$categoryWhitelist, 结果=$result")
+            val config = getConfigForCategory(group)
+            val result = config?.showGroup ?: true
             return result
         }
         
-        // 过滤函数，专门用于过滤"全部"分组的feeds
         fun shouldIncludeFeedInAll(feed: Feed): Boolean {
-            val result = com.ddyy.zenfeed.extension.FeedFilterHelper.shouldIncludeFeedInAll(
-                feed,
-                groupingMode,
-                categoryFilterType,
-                categoryBlacklist,
-                categoryWhitelist
-            )
+            val categoryConfig = getConfigForCategory(feed.labels.category)
+            val sourceConfig = feed.labels.source?.let { getConfigForCategory(it) }
+            
+            val categoryShowInAll = categoryConfig?.showInAll ?: true
+            val sourceShowInAll = sourceConfig?.showInAll ?: true
+            
+            val result = categoryShowInAll && sourceShowInAll
             return result
         }
         
-        // 根据filterIncludeAll设置过滤"全部"分组的feeds
-        val filteredAllFeeds = if (filterIncludeAll && categoryFilterType != "none") {
-            Log.d("FeedsViewModel", "开始过滤全部分组: 总数=${feedsWithReadStatus.size}, 过滤类型=$categoryFilterType, 白名单=$categoryWhitelist, 黑名单=$categoryBlacklist")
-            val filtered = feedsWithReadStatus.filter { feed ->
-                shouldIncludeFeedInAll(feed)
+        val filteredAllFeeds = feedsWithReadStatus.filter { feed ->
+            shouldIncludeFeedInAll(feed)
+        }
+        
+        // 计算每个分类下的文章数量
+        val categoryArticleCounts = mutableMapOf<String, Int>()
+        allFeeds.forEach { feed ->
+            // 统计分类文章数量
+            feed.labels.category?.let {
+                categoryArticleCounts[it] = categoryArticleCounts.getOrDefault(it, 0) + 1
             }
-            Log.d("FeedsViewModel", "过滤完成: 过滤后数量=${filtered.size}")
-            filtered
-        } else {
-            Log.d("FeedsViewModel", "不过滤全部分组: filterIncludeAll=$filterIncludeAll, categoryFilterType=$categoryFilterType")
-            feedsWithReadStatus
+            // 统计来源文章数量
+            feed.labels.source?.let {
+                categoryArticleCounts[it] = categoryArticleCounts.getOrDefault(it, 0) + 1
+            }
+        }
+        
+        // 辅助函数：按sortOrder和名称排序，sortOrder=0的移动到末尾
+        fun sortCategories(categories: List<String>): List<String> {
+            return categories.sortedWith(
+                compareBy<String> { category ->
+                    // sortOrder=0的移动到末尾，其他按sortOrder排序
+                    val sortOrder = getConfigForCategory(category)?.sortOrder ?: 0
+                    if (sortOrder == 0) Int.MAX_VALUE else sortOrder
+                }.thenBy { it }
+            )
+        }
+        
+        // 辅助函数：判断一个名称是否是分类（而不是来源）
+        fun isCategory(name: String): Boolean {
+            return allFeeds.any { it.labels.category == name }
+        }
+        
+        // 辅助函数：合并并排序categories和sources
+        fun sortCategoriesAndSources(categoryList: List<String>, sourceList: List<String>): List<String> {
+            val allItems = categoryList + sourceList
+            
+            // 检查是否所有项目的sortOrder都是0
+            val allZeroSortOrder = allItems.all { 
+                (getConfigForCategory(it)?.sortOrder ?: 0) == 0 
+            }
+            
+            if (allZeroSortOrder) {
+                // 所有sortOrder都是0，按先分类后来源，再按名称排序
+                return allItems.sortedWith(
+                    compareBy<String> { item ->
+                        // 分类在前，来源在后
+                        if (isCategory(item)) 0 else 1
+                    }.thenBy { it }
+                )
+            } else {
+                // 有部分sortOrder>0，按sortOrder排序，未排序的放到后面
+                return allItems.sortedWith(
+                    compareBy<String> { item ->
+                        val sortOrder = getConfigForCategory(item)?.sortOrder ?: 0
+                        // sortOrder=0的放到后面
+                        if (sortOrder == 0) Int.MAX_VALUE else sortOrder
+                    }.thenBy { item ->
+                        // 相同sortOrder的，分类在前，来源在后
+                        if (isCategory(item)) 0 else 1
+                    }.thenBy { it }
+                )
+            }
         }
         
         val categories = when (groupingMode) {
             "source" -> {
-                // 按来源分组
                 allFeeds
                     .mapNotNull { it.labels.source }
-                    .filter { shouldShowGroup(it) }
+                    .filter { shouldShowGroup(it) && categoryArticleCounts.getOrDefault(it, 0) > 0 }
                     .distinct()
-                    .sorted()
+                    .let { sortCategories(it) }
             }
             "category,source" -> {
-                // 先分类后来源分组：先展示所有分类，然后展示所有来源
                 val categoryList = allFeeds
                     .mapNotNull { it.labels.category }
-                    .filter { shouldShowGroup(it) }
+                    .filter { shouldShowGroup(it) && categoryArticleCounts.getOrDefault(it, 0) > 0 }
                     .distinct()
-                    .sorted()
                 
                 val sourceList = allFeeds
                     .mapNotNull { it.labels.source }
-                    .filter { shouldShowGroup(it) }
+                    .filter { shouldShowGroup(it) && categoryArticleCounts.getOrDefault(it, 0) > 0 && it !in categoryList }
                     .distinct()
-                    .sorted()
                 
-                categoryList + sourceList
+                // 统一排序，不再确保分类在前，来源在后
+                sortCategoriesAndSources(categoryList, sourceList)
+            }
+            "none" -> {
+                emptyList()
             }
             else -> {
-                // 默认按分类分组
                 allFeeds
                     .mapNotNull { it.labels.category }
-                    .filter { shouldShowGroup(it) }
+                    .filter { shouldShowGroup(it) && categoryArticleCounts.getOrDefault(it, 0) > 0 }
                     .distinct()
-                    .sorted()
+                    .let { sortCategories(it) }
             }
         }
         
         feedsUiState = FeedsUiState.Success(
-            feeds = filteredAllFeeds, // 返回按时间倒序排序的列表，并应用过滤
+            feeds = feedsWithReadStatus,
+            allFeeds = filteredAllFeeds,
             categories = categories
         )
         

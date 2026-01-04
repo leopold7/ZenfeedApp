@@ -128,10 +128,6 @@ fun FeedsScreen(
     val shouldShowNoNewContent = feedsViewModel.shouldShowNoNewContent
     val errorMessage = feedsViewModel.errorMessage
     val groupingMode = feedsViewModel.groupingMode
-    val categoryFilterType = feedsViewModel.categoryFilterType
-    val categoryBlacklist = feedsViewModel.categoryBlacklist
-    val categoryWhitelist = feedsViewModel.categoryWhitelist
-    val filterIncludeAll = feedsViewModel.filterIncludeAll
     val imageCacheEnabled = feedsViewModel.imageCacheEnabled
     val onRefresh = { feedsViewModel.refreshFeeds() }
     val onCategorySelected = { category: String -> feedsViewModel.selectCategory(category) }
@@ -192,12 +188,7 @@ fun FeedsScreen(
         cacheSize = feedsViewModel.cacheSize,
         onClearCacheClick = { feedsViewModel.clearCache() },
         groupingMode = feedsViewModel.groupingMode,
-        categoryFilterType = feedsViewModel.categoryFilterType,
-        categoryBlacklist = feedsViewModel.categoryBlacklist,
-        categoryWhitelist = feedsViewModel.categoryWhitelist,
-        filterIncludeAll = feedsViewModel.filterIncludeAll,
         imageCacheEnabled = feedsViewModel.imageCacheEnabled,
-        onAddToBlacklist = { category -> feedsViewModel.addToBlacklist(category) },
         serverConfigs = feedsViewModel.serverConfigs,
         modifier = modifier
     )
@@ -247,12 +238,7 @@ fun FeedsScreenContent(
     cacheSize: String,
     onClearCacheClick: () -> Unit,
     groupingMode: String = "category",
-    categoryFilterType: String = "none",
-    categoryBlacklist: Set<String> = emptySet(),
-    categoryWhitelist: Set<String> = emptySet(),
-    filterIncludeAll: Boolean = true,
     imageCacheEnabled: Boolean = true,
-    onAddToBlacklist: (String) -> Unit = {},
     serverConfigs: List<com.ddyy.zenfeed.data.ServerConfig> = emptyList()
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -828,8 +814,7 @@ fun FeedsScreenContent(
                                 }
                             },
                             onTimeRangeSelected = onTimeRangeSelected,
-                            selectedTimeRangeHours = selectedTimeRangeHours,
-                            onAddToBlacklist = onAddToBlacklist
+                            selectedTimeRangeHours = selectedTimeRangeHours
                         )
 
                         // 观察播放状态
@@ -842,9 +827,12 @@ fun FeedsScreenContent(
                         }
 
                         // 预先按分组模式对 feeds 进行分组，避免在 Pager 内部进行昂贵的过滤操作
-                        val categorizedFeeds = remember(feedsUiState.feeds, groupingMode, categoryFilterType, categoryBlacklist, categoryWhitelist, filterIncludeAll) {
-                            feedsUiState.feeds.groupByMode(groupingMode, categoryFilterType, categoryBlacklist, categoryWhitelist, filterIncludeAll)
+                        val categorizedFeeds = remember(feedsUiState.feeds, groupingMode) {
+                            feedsUiState.feeds.groupByMode(groupingMode)
                         }
+                        
+                        // 获取"全部"页面的过滤后文章列表
+                        val allFeedsFiltered = (feedsUiState as? FeedsUiState.Success)?.allFeeds ?: emptyList()
 
                         // 处理返回时的滚动定位 - 检测页面重新进入
                         LaunchedEffect(Unit) {
@@ -1032,7 +1020,12 @@ fun FeedsScreenContent(
                                 "" // 默认为全部分类
                             }
                             // 直接从预先计算好的 Map 中获取数据，这是一个非常快速的操作
-                            val feedsForCategory = categorizedFeeds[category] ?: emptyList()
+                            // "全部"页面使用过滤后的文章列表，其他分组页面使用完整的文章列表
+                            val feedsForCategory = if (category.isEmpty()) {
+                                allFeedsFiltered
+                            } else {
+                                categorizedFeeds[category] ?: emptyList()
+                            }
                             val listState = listStates.getOrPut(category) {
                                 val (initialIndex, initialOffset) = scrollPositions[category]
                                     ?: (0 to 0)

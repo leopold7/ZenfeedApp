@@ -12,20 +12,26 @@
     <string name="theme_save_failed">保存主题设置失败：</string>
     
     <!-- 多服务器配置 -->
-    <string name="multi_server_config">多服务器配置</string>
-    <string name="server_name">服务器名称</string>
-    <string name="server_name_placeholder">输入服务器名称</string>
-    <string name="api_url">API地址</string>
-    <string name="api_url_placeholder">https://example.com</string>
-    <string name="backend_url">后端URL</string>
-    <string name="backend_url_placeholder">http://example.com:1300</string>
-    <string name="add_server">添加服务器</string>
-    <string name="delete_server">删除</string>
-    <string name="manage_multi_server_config">管理多服务器配置</string>
+    <string name="person_server_multi_server_config">多服务器配置</string>
+    <string name="person_server_name">服务器名称</string>
+    <string name="person_server_name_placeholder">输入服务器名称</string>
+    <string name="person_server_api_url">API地址</string>
+    <string name="person_server_api_url_placeholder">https://example.com</string>
+    <string name="person_server_backend_url">后端URL</string>
+    <string name="person_server_backend_url_placeholder">http://example.com:1300</string>
+    <string name="person_server_add">添加服务器</string>
+    <string name="person_server_delete">删除</string>
+    <string name="person_server_manage">管理多服务器配置</string>
     
     <!-- 通用 -->
     <string name="reset">重置</string>
     <string name="save">保存</string>
     <string name="settings">设置</string>
     <string name="back">返回</string>
+    
+    <!-- 首页分组配置 -->
+    <string name="person_home_grouping_settings">首页分组配置</string>
+    <string name="person_home_grouping_filter">首页分组过滤</string>
+    <string name="person_home_show_in_all">全部中显示文章</string>
+    <string name="person_home_show_group">显示分组</string>
 </resources>

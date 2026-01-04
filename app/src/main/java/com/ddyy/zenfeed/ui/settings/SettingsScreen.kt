@@ -144,10 +144,6 @@ fun SettingsScreen(
             // 个性化设置卡片
             PersonalizationSettingsCard(
                 homeGroupingMode = uiState.homeGroupingMode,
-                categoryFilterType = uiState.categoryFilterType,
-                categoryBlacklist = uiState.categoryBlacklist,
-                categoryWhitelist = uiState.categoryWhitelist,
-                filterIncludeAll = uiState.filterIncludeAll,
                 imageCacheEnabled = uiState.imageCacheEnabled,
                 isLoading = uiState.isLoading,
                 navController = navController,
@@ -155,10 +151,6 @@ fun SettingsScreen(
                     settingsViewModel.updateHomeGroupingMode(it)
                     settingsViewModel.saveHomeGroupingMode()
                 },
-                onCategoryFilterTypeChange = settingsViewModel::updateCategoryFilterType,
-                onCategoryBlacklistChange = settingsViewModel::updateCategoryBlacklist,
-                onCategoryWhitelistChange = settingsViewModel::updateCategoryWhitelist,
-                onFilterIncludeAllChange = settingsViewModel::updateFilterIncludeAll,
                 onImageCacheEnabledChange = settingsViewModel::updateImageCacheEnabled,
                 onSaveCategoryFilterSettings = settingsViewModel::saveCategoryFilterSettings
             )
@@ -687,18 +679,10 @@ private fun UpdateSettingsCard(
 @Composable
 private fun PersonalizationSettingsCard(
     homeGroupingMode: String,
-    categoryFilterType: String,
-    categoryBlacklist: Set<String>,
-    categoryWhitelist: Set<String>,
-    filterIncludeAll: Boolean,
     imageCacheEnabled: Boolean,
     isLoading: Boolean,
     navController: NavController,
     onHomeGroupingModeChange: (String) -> Unit,
-    onCategoryFilterTypeChange: (String) -> Unit,
-    onCategoryBlacklistChange: (MutableSet<String>) -> Unit,
-    onCategoryWhitelistChange: (MutableSet<String>) -> Unit,
-    onFilterIncludeAllChange: (Boolean) -> Unit,
     onImageCacheEnabledChange: (Boolean) -> Unit,
     onSaveCategoryFilterSettings: () -> Unit
 ) {
@@ -722,26 +706,6 @@ private fun PersonalizationSettingsCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // 图片缓存开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "文章显示图片",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Switch(
-                    checked = imageCacheEnabled,
-                    onCheckedChange = {
-                        onImageCacheEnabledChange(it)
-                        onSaveCategoryFilterSettings()
-                    },
-                    enabled = !isLoading
-                )
-            }
-            
             // 多服务器配置选项
             Column {
                 Text(
@@ -777,7 +741,8 @@ private fun PersonalizationSettingsCard(
                 val groupingOptions = mapOf(
                     "category" to "按分类",
                     "source" to "按来源",
-                    "category,source" to "先分类后来源"
+                    "category,source" to "先分类后来源",
+                    "none" to "无"
                 )
                 
                 // 当前选中的选项文本
@@ -848,231 +813,48 @@ private fun PersonalizationSettingsCard(
                 }
             }
 
-            // 首页分组过滤
-            Column {
-                Text(
-                    text = "首页分组过滤",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                // 过滤类型选择
-                val filterTypeOptions = mapOf(
-                    "none" to "无",
-                    "blacklist" to "黑名单",
-                    "whitelist" to "白名单"
-                )
-                
-                // 当前选中的选项文本
-                val selectedFilterTypeText = filterTypeOptions[categoryFilterType] ?: "无"
-                
-                // 过滤类型Dialog状态
-                var showFilterTypeDialog by remember { mutableStateOf(false) }
-                
-                // 点击按钮触发Dialog
-                OutlinedButton(
-                    onClick = { showFilterTypeDialog = true && !isLoading },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
+            // 首页分组配置 - 只有当分组模式不是"无"时才显示
+            if (homeGroupingMode != "none") {
+                Column {
                     Text(
-                        text = selectedFilterTypeText,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "首页分组配置",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                }
-                
-                // 过滤类型选择Dialog
-                if (showFilterTypeDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showFilterTypeDialog = false },
-                        title = { Text("选择过滤类型") },
-                        text = {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                filterTypeOptions.forEach { (type, text) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                onCategoryFilterTypeChange(type)
-                                                onSaveCategoryFilterSettings()
-                                                showFilterTypeDialog = false
-                                            }
-                                            .padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = text,
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        RadioButton(
-                                            selected = categoryFilterType == type,
-                                            onClick = {
-                                                onCategoryFilterTypeChange(type)
-                                                onSaveCategoryFilterSettings()
-                                                showFilterTypeDialog = false
-                                            },
-                                            enabled = !isLoading
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = { showFilterTypeDialog = false }
-                            ) {
-                                Text("关闭")
-                            }
-                        },
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                }
-
-                // 包含全部分组的开关
-                if (categoryFilterType != "none") {
-                    Row(
+                    
+                    OutlinedButton(
+                        onClick = { navController.navigate("homeGroupingSettings") },
+                        enabled = !isLoading,
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            text = "包含首页全部",
+                            text = "管理首页分组配置",
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        Switch(
-                            checked = filterIncludeAll,
-                            onCheckedChange = {
-                                onFilterIncludeAllChange(it)
-                                onSaveCategoryFilterSettings()
-                            },
-                            enabled = !isLoading
-                        )
                     }
                 }
+            }
 
-                // 过滤列表输入
-                if (categoryFilterType != "none") {
-                    Column(
-                        modifier = Modifier.padding(top = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = if (categoryFilterType == "blacklist") "黑名单列表" else "白名单列表",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        // 动态输入字段
-                        var inputList by remember {
-                            mutableStateOf(
-                                if (categoryFilterType == "blacklist") {
-                                    categoryBlacklist.toMutableList()
-                                } else {
-                                    categoryWhitelist.toMutableList()
-                                }
-                            )
-                        }
-
-                        // 添加空输入字段
-                        if (inputList.isEmpty()) {
-                            inputList.add("")
-                        }
-
-                        // 输入字段列表
-                        inputList.forEachIndexed { index, value ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OutlinedTextField(
-                                    value = value,
-                                    onValueChange = { newValue ->
-                                        inputList = inputList.toMutableList().apply {
-                                            this[index] = newValue
-                                        }
-                                    },
-                                    placeholder = { Text("输入${if (categoryFilterType == "blacklist") "黑名单" else "白名单"}项 (包含关系)") },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    enabled = !isLoading,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.outline,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                        focusedContainerColor = Color.Transparent,
-                                        unfocusedContainerColor = Color.Transparent
-                                    )
-                                )
-                                
-                                // 删除按钮
-                                IconButton(
-                                    onClick = {
-                                        if (inputList.size > 1) {
-                                            inputList = inputList.toMutableList().apply {
-                                                removeAt(index)
-                                            }
-                                        }
-                                    },
-                                    enabled = !isLoading && inputList.size > 1
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "删除",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-                        }
-
-                        // 添加按钮
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            if (!isLoading) {
-                                FloatingActionButton(
-                                    onClick = {
-                                        inputList = inputList.toMutableList().apply {
-                                            add("")
-                                        }
-                                    },
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(40.dp),
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "添加"
-                                    )
-                                }
-                            }
-                        }
-
-                        // 保存按钮
-                        OutlinedButton(
-                            onClick = {
-                                val filteredList = inputList.filter { it.isNotBlank() }.toMutableSet()
-                                if (categoryFilterType == "blacklist") {
-                                    onCategoryBlacklistChange(filteredList)
-                                } else {
-                                    onCategoryWhitelistChange(filteredList)
-                                }
-                                onSaveCategoryFilterSettings()
-                            },
-                            enabled = !isLoading,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("保存设置")
-                        }
-                    }
-                }
+                        // 图片缓存开关
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "文章显示图片",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = imageCacheEnabled,
+                    onCheckedChange = {
+                        onImageCacheEnabledChange(it)
+                        onSaveCategoryFilterSettings()
+                    },
+                    enabled = !isLoading
+                )
             }
         }
     }

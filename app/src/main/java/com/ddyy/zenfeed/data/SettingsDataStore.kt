@@ -36,10 +36,7 @@ class SettingsDataStore(private val context: Context) {
         private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         private val CHECK_UPDATE_ON_START_KEY = booleanPreferencesKey("check_update_on_start")
         private val HOME_GROUPING_MODE_KEY = stringPreferencesKey("home_grouping_mode")
-        private val CATEGORY_FILTER_TYPE_KEY = stringPreferencesKey("category_filter_type")
-        private val CATEGORY_BLACKLIST_KEY = stringSetPreferencesKey("category_blacklist")
-        private val CATEGORY_WHITELIST_KEY = stringSetPreferencesKey("category_whitelist")
-        private val FILTER_INCLUDE_ALL_KEY = booleanPreferencesKey("filter_include_all")
+        private val CATEGORY_FILTER_CONFIGS_KEY = stringPreferencesKey("category_filter_configs")
         private val IMAGE_CACHE_ENABLED_KEY = booleanPreferencesKey("image_cache_enabled")
         private val SERVER_CONFIGS_KEY = stringPreferencesKey("server_configs")
         
@@ -66,14 +63,9 @@ class SettingsDataStore(private val context: Context) {
         const val DEFAULT_CHECK_UPDATE_ON_START = true
         
         // 默认的首页分组模式设置
-        const val DEFAULT_HOME_GROUPING_MODE = "category" // 可以是 "category", "source", "category,source"
+        const val DEFAULT_HOME_GROUPING_MODE = "category" // 可以是 "category", "source", "category,source", "none"
         
-        // 默认的分类过滤设置
-        const val DEFAULT_CATEGORY_FILTER_TYPE = "none" // 可以是 "none", "blacklist", "whitelist"
-        val DEFAULT_CATEGORY_BLACKLIST: Set<String> = emptySet()
-        val DEFAULT_CATEGORY_WHITELIST: Set<String> = emptySet()
-        const val DEFAULT_FILTER_INCLUDE_ALL = true
-        const val DEFAULT_IMAGE_CACHE_ENABLED = true // 是否在"全部"分组中应用过滤
+        const val DEFAULT_IMAGE_CACHE_ENABLED = true // 是否文章显示图片
         
         // 默认的AI模型配置
         const val DEFAULT_AI_API_URL = "https://api.openai.com/v1"
@@ -212,12 +204,21 @@ class SettingsDataStore(private val context: Context) {
         }
     
     /**
-     * 获取分类黑名单的Flow
+     * 获取分类过滤配置的Flow
      */
-    val categoryBlacklist: Flow<Set<String>> = context.settingsDataStore.data
-        .map {
-            preferences ->
-            preferences[CATEGORY_BLACKLIST_KEY] ?: DEFAULT_CATEGORY_BLACKLIST
+    val categoryFilterConfigs: Flow<List<CategoryFilterConfig>> = context.settingsDataStore.data
+        .map { preferences ->
+            val json = preferences[CATEGORY_FILTER_CONFIGS_KEY] ?: ""
+            if (json.isEmpty()) {
+                emptyList()
+            } else {
+                try {
+                    val type = object : TypeToken<List<CategoryFilterConfig>>() {}.type
+                    Gson().fromJson(json, type)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
         }
     
     /**
@@ -227,30 +228,6 @@ class SettingsDataStore(private val context: Context) {
         .map {
             preferences ->
             preferences[IMAGE_CACHE_ENABLED_KEY] ?: DEFAULT_IMAGE_CACHE_ENABLED
-        }
-    
-    /**
-     * 获取分类过滤类型的Flow
-     */
-    val categoryFilterType: Flow<String> = context.settingsDataStore.data
-        .map { preferences ->
-            preferences[CATEGORY_FILTER_TYPE_KEY] ?: DEFAULT_CATEGORY_FILTER_TYPE
-        }
-    
-    /**
-     * 获取分类白名单的Flow
-     */
-    val categoryWhitelist: Flow<Set<String>> = context.settingsDataStore.data
-        .map { preferences ->
-            preferences[CATEGORY_WHITELIST_KEY] ?: DEFAULT_CATEGORY_WHITELIST
-        }
-    
-    /**
-     * 获取是否在"全部"分组中应用过滤的Flow
-     */
-    val filterIncludeAll: Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences ->
-            preferences[FILTER_INCLUDE_ALL_KEY] ?: DEFAULT_FILTER_INCLUDE_ALL
         }
     
     /**
@@ -389,7 +366,7 @@ class SettingsDataStore(private val context: Context) {
     
     /**
      * 保存首页分组模式
-     * @param mode 分组模式，可以是 "category", "source", "category,source"
+     * @param mode 分组模式，可以是 "category", "source", "category,source", "none"
      */
     suspend fun saveHomeGroupingMode(mode: String) {
         context.settingsDataStore.edit { preferences ->
@@ -398,42 +375,13 @@ class SettingsDataStore(private val context: Context) {
     }
     
     /**
-     * 保存分类黑名单
-     * @param blacklist 要保存的分类黑名单
+     * 保存分类过滤配置列表
+     * @param configs 分类过滤配置列表
      */
-    suspend fun saveCategoryBlacklist(blacklist: Set<String>) {
+    suspend fun saveCategoryFilterConfigs(configs: List<CategoryFilterConfig>) {
         context.settingsDataStore.edit { preferences ->
-            preferences[CATEGORY_BLACKLIST_KEY] = blacklist
-        }
-    }
-    
-    /**
-     * 保存分类过滤类型
-     * @param filterType 过滤类型，可以是 "none", "blacklist", "whitelist"
-     */
-    suspend fun saveCategoryFilterType(filterType: String) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[CATEGORY_FILTER_TYPE_KEY] = filterType
-        }
-    }
-    
-    /**
-     * 保存分类白名单
-     * @param whitelist 要保存的分类白名单
-     */
-    suspend fun saveCategoryWhitelist(whitelist: Set<String>) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[CATEGORY_WHITELIST_KEY] = whitelist
-        }
-    }
-    
-    /**
-     * 保存是否在"全部"分组中应用过滤的设置
-     * @param includeAll 是否在"全部"分组中应用过滤
-     */
-    suspend fun saveFilterIncludeAll(includeAll: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[FILTER_INCLUDE_ALL_KEY] = includeAll
+            val json = Gson().toJson(configs)
+            preferences[CATEGORY_FILTER_CONFIGS_KEY] = json
         }
     }
     
@@ -508,10 +456,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[THEME_MODE_KEY] = DEFAULT_THEME_MODE
             preferences[CHECK_UPDATE_ON_START_KEY] = DEFAULT_CHECK_UPDATE_ON_START
             preferences[HOME_GROUPING_MODE_KEY] = DEFAULT_HOME_GROUPING_MODE
-            preferences[CATEGORY_FILTER_TYPE_KEY] = DEFAULT_CATEGORY_FILTER_TYPE
-            preferences[CATEGORY_BLACKLIST_KEY] = DEFAULT_CATEGORY_BLACKLIST
-            preferences[CATEGORY_WHITELIST_KEY] = DEFAULT_CATEGORY_WHITELIST
-            preferences[FILTER_INCLUDE_ALL_KEY] = DEFAULT_FILTER_INCLUDE_ALL
+            preferences[CATEGORY_FILTER_CONFIGS_KEY] = ""
             preferences[IMAGE_CACHE_ENABLED_KEY] = DEFAULT_IMAGE_CACHE_ENABLED
             preferences[AI_API_URL_KEY] = DEFAULT_AI_API_URL
             preferences[AI_API_KEY_KEY] = DEFAULT_AI_API_KEY

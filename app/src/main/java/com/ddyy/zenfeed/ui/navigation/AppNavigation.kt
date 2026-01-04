@@ -33,6 +33,7 @@ import com.ddyy.zenfeed.ui.player.PlayerViewModel
 import com.ddyy.zenfeed.ui.settings.SettingsScreen
 import com.ddyy.zenfeed.ui.settings.SettingsViewModel
 import com.ddyy.zenfeed.ui.settings.MultiServerConfigScreen
+import com.ddyy.zenfeed.ui.settings.HomeGroupingSettingsScreen
 import com.ddyy.zenfeed.ui.webview.WebViewScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -467,6 +468,85 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             MultiServerConfigScreen(
                 navController = navController,
+                settingsViewModel = settingsViewModel
+            )
+        }
+        composable(
+            "homeGroupingSettings",
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                    animationSpec = tween(
+                        durationMillis = 350,
+                        easing = FastOutSlowInEasing
+                    )
+                ) + fadeIn(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                    animationSpec = tween(
+                        durationMillis = 350,
+                        easing = FastOutSlowInEasing
+                    )
+                ) + fadeOut(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            }
+        ) {
+            val settingsViewModel = viewModel<SettingsViewModel>()
+            val currentFeedsState = feedsViewModel.feedsUiState
+            // 获取所有可能的分类，包括已隐藏的分类
+            val categories = if (currentFeedsState is com.ddyy.zenfeed.ui.feeds.FeedsUiState.Success) {
+                val groupingMode = feedsViewModel.groupingMode
+                val fullFeeds = feedsViewModel.fullFeeds
+                
+                when (groupingMode) {
+                    "source" -> {
+                        // 只提取来源，排序
+                        fullFeeds
+                            .mapNotNull { it.labels.source }
+                            .distinct()
+                            .sorted()
+                    }
+                    "category,source" -> {
+                        // 先提取分类，排序
+                        val categoriesList = fullFeeds
+                            .mapNotNull { it.labels.category }
+                            .distinct()
+                            .sorted()
+                        
+                        // 再提取来源，排序
+                        val sourcesList = fullFeeds
+                            .mapNotNull { it.labels.source }
+                            .distinct()
+                            .sorted()
+                        
+                        // 合并分类和来源，确保分类在前
+                        categoriesList + sourcesList
+                    }
+                    else -> {
+                        // 只提取分类，排序
+                        fullFeeds
+                            .mapNotNull { it.labels.category }
+                            .distinct()
+                            .sorted()
+                    }
+                }
+            } else {
+                emptyList()
+            }
+            HomeGroupingSettingsScreen(
+                navController = navController,
+                categories = categories,
                 settingsViewModel = settingsViewModel
             )
         }

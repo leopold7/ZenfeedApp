@@ -3,8 +3,9 @@ package com.ddyy.zenfeed.ui.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.ddyy.zenfeed.data.SettingsDataStore
+import com.ddyy.zenfeed.data.CategoryFilterConfig
 import com.ddyy.zenfeed.data.ServerConfig
+import com.ddyy.zenfeed.data.SettingsDataStore
 import com.ddyy.zenfeed.data.network.ApiClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,10 +28,7 @@ data class SettingsUiState(
     val themeMode: String = "system",
     val checkUpdateOnStart: Boolean = true,
     val homeGroupingMode: String = "category",
-    val categoryFilterType: String = "none",
-    val categoryBlacklist: Set<String> = emptySet(),
-    val categoryWhitelist: Set<String> = emptySet(),
-    val filterIncludeAll: Boolean = true,
+    val categoryFilterConfigs: List<CategoryFilterConfig> = emptyList(),
     val imageCacheEnabled: Boolean = true,
     val aiApiUrl: String = "",
     val aiApiKey: String = "",
@@ -38,7 +36,7 @@ data class SettingsUiState(
     val aiPrompt: String = "",
     val serverConfigs: List<ServerConfig> = emptyList(),
     val isLoading: Boolean = false,
-    val message: String ="")
+    val message: String = "")
 
 /**
  * 设置页面的ViewModel
@@ -62,10 +60,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentThemeMode = "system"
     private var currentCheckUpdateOnStart = true
     private var currentHomeGroupingMode = "category"
-    private var currentCategoryFilterType = "none"
-    private var currentCategoryBlacklist = mutableSetOf<String>()
-    private var currentCategoryWhitelist = mutableSetOf<String>()
-    private var currentFilterIncludeAll = true
+    private var currentCategoryFilterConfigs = mutableListOf<CategoryFilterConfig>()
     private var currentImageCacheEnabled = true
     private var currentAiApiUrl = ""
     private var currentAiApiKey = ""
@@ -82,8 +77,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     private fun loadCurrentSettings() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            
             // 加载所有设置
             settingsDataStore.apiBaseUrl.collect { apiUrl ->
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                
                 val backendUrl = settingsDataStore.backendUrl.first()
                 val proxyEnabled = settingsDataStore.proxyEnabled.first()
                 val proxyType = settingsDataStore.proxyType.first()
@@ -91,46 +90,44 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val proxyPort = settingsDataStore.proxyPort.first()
                 val proxyUsername = settingsDataStore.proxyUsername.first()
                 val proxyPassword = settingsDataStore.proxyPassword.first()
-                
+                val themeMode = settingsDataStore.themeMode.first()
+                val checkUpdateOnStart = settingsDataStore.checkUpdateOnStart.first()
                 val homeGroupingMode = settingsDataStore.homeGroupingMode.first()
-                val categoryFilterType = settingsDataStore.categoryFilterType.first()
-                val categoryBlacklist = settingsDataStore.categoryBlacklist.first()
-                val categoryWhitelist = settingsDataStore.categoryWhitelist.first()
-                val filterIncludeAll = settingsDataStore.filterIncludeAll.first()
+                val categoryFilterConfigs = settingsDataStore.categoryFilterConfigs.first()
                 val imageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
                 val serverConfigs = settingsDataStore.serverConfigs.first()
-            _uiState.value = _uiState.value.copy(
-                apiUrl = apiUrl,
-                backendUrl = backendUrl,
-                proxyEnabled = proxyEnabled,
-                proxyType = proxyType,
-                proxyHost = proxyHost,
-                proxyPort = proxyPort,
-                proxyUsername = proxyUsername,
-                proxyPassword = proxyPassword,
-                themeMode = settingsDataStore.themeMode.first(),
-                checkUpdateOnStart = settingsDataStore.checkUpdateOnStart.first(),
-                homeGroupingMode = homeGroupingMode,
-                categoryFilterType = categoryFilterType,
-                categoryBlacklist = categoryBlacklist,
-                categoryWhitelist = categoryWhitelist,
-                filterIncludeAll = filterIncludeAll,
-                imageCacheEnabled = imageCacheEnabled,
-                serverConfigs = serverConfigs,
-                aiApiUrl = settingsDataStore.aiApiUrl.first(),
-                aiApiKey = settingsDataStore.aiApiKey.first(),
-                aiModelName = settingsDataStore.aiModelName.first(),
-                aiPrompt = settingsDataStore.aiPrompt.first()
-            )
-            
-            // 更新当前分组模式
-            currentHomeGroupingMode = homeGroupingMode
-            currentCategoryFilterType = categoryFilterType
-            currentCategoryBlacklist = categoryBlacklist.toMutableSet()
-            currentCategoryWhitelist = categoryWhitelist.toMutableSet()
-            currentFilterIncludeAll = filterIncludeAll
-            currentImageCacheEnabled = imageCacheEnabled
-                
+                val aiApiUrl = settingsDataStore.aiApiUrl.first()
+                val aiApiKey = settingsDataStore.aiApiKey.first()
+                val aiModelName = settingsDataStore.aiModelName.first()
+                val aiPrompt = settingsDataStore.aiPrompt.first()
+
+                _uiState.value = _uiState.value.copy(
+                    apiUrl = apiUrl,
+                    backendUrl = backendUrl,
+                    proxyEnabled = proxyEnabled,
+                    proxyType = proxyType,
+                    proxyHost = proxyHost,
+                    proxyPort = proxyPort,
+                    proxyUsername = proxyUsername,
+                    proxyPassword = proxyPassword,
+                    themeMode = themeMode,
+                    checkUpdateOnStart = checkUpdateOnStart,
+                    homeGroupingMode = homeGroupingMode,
+                    categoryFilterConfigs = categoryFilterConfigs,
+                    imageCacheEnabled = imageCacheEnabled,
+                    serverConfigs = serverConfigs,
+                    aiApiUrl = aiApiUrl,
+                    aiApiKey = aiApiKey,
+                    aiModelName = aiModelName,
+                    aiPrompt = aiPrompt,
+                    isLoading = false
+                )
+
+                // 更新当前分组模式
+                currentHomeGroupingMode = homeGroupingMode
+                currentCategoryFilterConfigs = categoryFilterConfigs.toMutableList()
+                currentImageCacheEnabled = imageCacheEnabled
+
                 if (currentInputApiUrl.isEmpty()) {
                     currentInputApiUrl = apiUrl
                 }
@@ -152,19 +149,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     currentInputProxyPassword = proxyPassword
                 }
                 if (currentAiApiUrl.isEmpty()) {
-                    currentAiApiUrl = settingsDataStore.aiApiUrl.first()
+                    currentAiApiUrl = aiApiUrl
                 }
                 if (currentAiApiKey.isEmpty()) {
-                    currentAiApiKey = settingsDataStore.aiApiKey.first()
+                    currentAiApiKey = aiApiKey
                 }
                 if (currentAiModelName.isEmpty()) {
-                    currentAiModelName = settingsDataStore.aiModelName.first()
+                    currentAiModelName = aiModelName
                 }
                 if (currentAiPrompt.isEmpty()) {
-                    currentAiPrompt = settingsDataStore.aiPrompt.first()
+                    currentAiPrompt = aiPrompt
                 }
-                currentThemeMode = settingsDataStore.themeMode.first()
-                currentCheckUpdateOnStart = settingsDataStore.checkUpdateOnStart.first()
+                currentThemeMode = themeMode
+                currentCheckUpdateOnStart = checkUpdateOnStart
             }
         }
     }
@@ -245,42 +242,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     /**
      * 更新首页分组模式
-     * @param mode 分组模式，可以是 "category", "source", "category,source"
+     * @param mode 分组模式，可以是 "category", "source", "category,source", "none"
      */
     fun updateHomeGroupingMode(mode: String) {
         currentHomeGroupingMode = mode
     }
     
     /**
-     * 更新分类过滤类型
-     * @param filterType 过滤类型，可以是 "none", "blacklist", "whitelist"
+     * 更新分类过滤配置列表
+     * @param configs 分类过滤配置列表
      */
-    fun updateCategoryFilterType(filterType: String) {
-        currentCategoryFilterType = filterType
-    }
-    
-    /**
-     * 更新分类黑名单
-     * @param blacklist 分类黑名单
-     */
-    fun updateCategoryBlacklist(blacklist: MutableSet<String>) {
-        currentCategoryBlacklist = blacklist
-    }
-    
-    /**
-     * 更新分类白名单
-     * @param whitelist 分类白名单
-     */
-    fun updateCategoryWhitelist(whitelist: MutableSet<String>) {
-        currentCategoryWhitelist = whitelist
-    }
-    
-    /**
-     * 更新是否在"全部"分组中应用过滤的设置
-     * @param includeAll 是否在"全部"分组中应用过滤
-     */
-    fun updateFilterIncludeAll(includeAll: Boolean) {
-        currentFilterIncludeAll = includeAll
+    fun updateCategoryFilterConfigs(configs: List<CategoryFilterConfig>) {
+        currentCategoryFilterConfigs = configs.toMutableList()
+        // 更新 UI 状态，确保页面显示最新配置
+        _uiState.value = _uiState.value.copy(
+            categoryFilterConfigs = currentCategoryFilterConfigs
+        )
     }
     
     /**
@@ -561,24 +538,40 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     
     /**
-     * 保存分类过滤设置
+     * 保存分类过滤配置
      */
     fun saveCategoryFilterSettings() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             
             try {
-                // 过滤掉空字符串
-                val filteredBlacklist = currentCategoryBlacklist.filter { it.isNotBlank() }.toSet()
-                val filteredWhitelist = currentCategoryWhitelist.filter { it.isNotBlank() }.toSet()
-                
-                settingsDataStore.saveCategoryFilterType(currentCategoryFilterType)
-                settingsDataStore.saveCategoryBlacklist(filteredBlacklist)
-                settingsDataStore.saveCategoryWhitelist(filteredWhitelist)
-                settingsDataStore.saveFilterIncludeAll(currentFilterIncludeAll)
+                settingsDataStore.saveCategoryFilterConfigs(currentCategoryFilterConfigs)
                 settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
                 
                 showMessage("个性化设置已保存")
+                
+            } catch (e: Exception) {
+                showMessage("保存失败：${e.message}")
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
+    }
+    
+    /**
+     * 保存分类过滤配置（在新页面使用）
+     */
+    fun saveCategoryFilterConfigs() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            
+            try {
+                settingsDataStore.saveCategoryFilterConfigs(currentCategoryFilterConfigs)
+                // 更新 UI 状态，确保页面显示最新配置
+                _uiState.value = _uiState.value.copy(
+                    categoryFilterConfigs = currentCategoryFilterConfigs
+                )
+                showMessage("设置已保存")
                 
             } catch (e: Exception) {
                 showMessage("保存失败：${e.message}")
@@ -662,10 +655,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 currentThemeMode = SettingsDataStore.DEFAULT_THEME_MODE
                 currentCheckUpdateOnStart = SettingsDataStore.DEFAULT_CHECK_UPDATE_ON_START
                 currentHomeGroupingMode = SettingsDataStore.DEFAULT_HOME_GROUPING_MODE
-            currentCategoryFilterType = SettingsDataStore.DEFAULT_CATEGORY_FILTER_TYPE
-            currentCategoryBlacklist = SettingsDataStore.DEFAULT_CATEGORY_BLACKLIST.toMutableSet()
-            currentCategoryWhitelist = SettingsDataStore.DEFAULT_CATEGORY_WHITELIST.toMutableSet()
-            currentFilterIncludeAll = SettingsDataStore.DEFAULT_FILTER_INCLUDE_ALL
+            currentCategoryFilterConfigs = mutableListOf()
             currentImageCacheEnabled = SettingsDataStore.DEFAULT_IMAGE_CACHE_ENABLED
             currentAiApiUrl = SettingsDataStore.DEFAULT_AI_API_URL
             currentAiApiKey = SettingsDataStore.DEFAULT_AI_API_KEY

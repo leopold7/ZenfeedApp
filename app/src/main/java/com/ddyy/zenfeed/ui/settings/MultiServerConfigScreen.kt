@@ -111,7 +111,7 @@ fun MultiServerConfigScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.multi_server_config),
+                        text = stringResource(R.string.person_server_multi_server_config),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -256,11 +256,11 @@ private fun AddServerButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = stringResource(R.string.add_server),
+            contentDescription = stringResource(R.string.person_server_add),
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(stringResource(R.string.add_server))
+        Text(stringResource(R.string.person_server_add))
     }
 }
 
@@ -286,8 +286,8 @@ fun ServerConfigItem(
             OutlinedTextField(
                 value = serverConfig.name,
                 onValueChange = { onConfigChange(serverConfig.copy(name = it)) },
-                label = { Text(stringResource(R.string.server_name)) },
-                placeholder = { Text(stringResource(R.string.server_name_placeholder)) },
+                label = { Text(stringResource(R.string.person_server_name)) },
+                placeholder = { Text(stringResource(R.string.person_server_name_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -300,8 +300,8 @@ fun ServerConfigItem(
             OutlinedTextField(
                 value = serverConfig.apiUrl,
                 onValueChange = { onConfigChange(serverConfig.copy(apiUrl = it)) },
-                label = { Text(stringResource(R.string.api_url)) },
-                placeholder = { Text(stringResource(R.string.api_url_placeholder)) },
+                label = { Text(stringResource(R.string.person_server_api_url)) },
+                placeholder = { Text(stringResource(R.string.person_server_api_url_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 shape = RoundedCornerShape(12.dp),
@@ -315,8 +315,8 @@ fun ServerConfigItem(
             OutlinedTextField(
                 value = serverConfig.backendUrl,
                 onValueChange = { onConfigChange(serverConfig.copy(backendUrl = it)) },
-                label = { Text(stringResource(R.string.backend_url)) },
-                placeholder = { Text(stringResource(R.string.backend_url_placeholder)) },
+                label = { Text(stringResource(R.string.person_server_backend_url)) },
+                placeholder = { Text(stringResource(R.string.person_server_backend_url_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 shape = RoundedCornerShape(12.dp),
@@ -342,11 +342,11 @@ fun ServerConfigItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.delete_server),
+                    contentDescription = stringResource(R.string.person_server_delete),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.delete_server))
+                Text(stringResource(R.string.person_server_delete))
             }
         }
     }

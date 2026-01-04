@@ -32,104 +32,43 @@ fun List<Feed>.groupByCategory(): Map<String, List<Feed>> {
 }
 
 /**
- * 根据分组模式对feeds进行分组
- * @param mode 分组模式，可以是 "category", "source", "category,source"
- * @param filterType 过滤类型，可以是 "none", "blacklist", "whitelist"
- * @param blacklist 分类黑名单，不包含在结果中的分类
- * @param whitelist 分类白名单，只包含在结果中的分类
- * @param filterIncludeAll 是否在"全部"分组中应用过滤
- */
-fun List<Feed>.groupByMode(
-    mode: String,
-    filterType: String = "none",
-    blacklist: Set<String> = emptySet(),
-    whitelist: Set<String> = emptySet(),
-    filterIncludeAll: Boolean = true
-): Map<String, List<Feed>> {
-    return when (mode) {
-        "source" -> {
-            buildGroupedMap(
-                builderAction = {
-                    this@groupByMode.groupBy { it.labels.source ?: "" }
-                        .forEach { (source, feeds) ->
-                            if (FeedFilterHelper.shouldShowGroup(source, filterType, blacklist, whitelist)) {
-                                put(source, feeds)
-                            }
-                        }
-                },
-                mode = mode,
-                filterType = filterType,
-                blacklist = blacklist,
-                whitelist = whitelist,
-                filterIncludeAll = filterIncludeAll
-            )
-        }
-        "category,source" -> {
-            buildGroupedMap(
-                builderAction = {
-                    this@groupByMode.groupBy { it.labels.category ?: "" }
-                        .forEach { (category, feeds) ->
-                            if (FeedFilterHelper.shouldShowGroup(category, filterType, blacklist, whitelist)) {
-                                put(category, feeds)
-                            }
-                        }
-                    
-                    this@groupByMode.groupBy { it.labels.source ?: "" }
-                        .forEach { (source, feeds) ->
-                            if (FeedFilterHelper.shouldShowGroup(source, filterType, blacklist, whitelist)) {
-                                put(source, feeds)
-                            }
-                        }
-                },
-                mode = mode,
-                filterType = filterType,
-                blacklist = blacklist,
-                whitelist = whitelist,
-                filterIncludeAll = filterIncludeAll
-            )
-        }
-        else -> {
-            buildGroupedMap(
-                builderAction = {
-                    this@groupByMode.groupBy { it.labels.category ?: "" }
-                        .forEach { (category, feeds) ->
-                            if (FeedFilterHelper.shouldShowGroup(category, filterType, blacklist, whitelist)) {
-                                put(category, feeds)
-                            }
-                        }
-                },
-                mode = mode,
-                filterType = filterType,
-                blacklist = blacklist,
-                whitelist = whitelist,
-                filterIncludeAll = filterIncludeAll
-            )
+     * 根据分组模式对feeds进行分组
+     * @param mode 分组模式，可以是 "category", "source", "category,source", "none"
+     */
+    fun List<Feed>.groupByMode(
+        mode: String
+    ): Map<String, List<Feed>> {
+        return when (mode) {
+            "source" -> {
+                val grouped = this.groupBy { it.labels.source ?: "" }.toMutableMap()
+                grouped[""] = this
+                grouped.toMap()
+            }
+            "category,source" -> {
+                val grouped = mutableMapOf<String, List<Feed>>()
+                // 先添加分类，确保分类在前
+                val categoryMap = this.groupBy { it.labels.category ?: "" }
+                categoryMap.forEach { (category, feeds) ->
+                    grouped[category] = feeds
+                }
+                // 再添加来源，确保来源在后
+                val sourceMap = this.groupBy { it.labels.source ?: "" }
+                sourceMap.forEach { (source, feeds) ->
+                    // 确保来源不会覆盖分类
+                    if (!grouped.containsKey(source)) {
+                        grouped[source] = feeds
+                    }
+                }
+                grouped[""] = this
+                grouped.toMap()
+            }
+            "none" -> {
+                mapOf("" to this)
+            }
+            else -> {
+                val grouped = this.groupBy { it.labels.category ?: "" }.toMutableMap()
+                grouped[""] = this
+                grouped.toMap()
+            }
         }
     }
-}
-
-/**
- * 构建分组Map，自动添加"全部"类别
- */
-private fun List<Feed>.buildGroupedMap(
-    builderAction: MutableMap<String, List<Feed>>.() -> Unit,
-    mode: String,
-    filterType: String,
-    blacklist: Set<String>,
-    whitelist: Set<String>,
-    filterIncludeAll: Boolean
-): Map<String, List<Feed>> {
-    val grouped = mutableMapOf<String, List<Feed>>()
-    grouped.builderAction()
-    
-    val allFeeds = if (filterIncludeAll && filterType != "none") {
-        this.filter { feed ->
-            FeedFilterHelper.shouldIncludeFeedInAll(feed, mode, filterType, blacklist, whitelist)
-        }
-    } else {
-        this
-    }
-    
-    grouped[""] = allFeeds
-    return grouped.toMap()
-}
