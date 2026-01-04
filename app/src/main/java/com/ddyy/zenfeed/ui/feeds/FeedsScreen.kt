@@ -198,6 +198,7 @@ fun FeedsScreen(
         filterIncludeAll = feedsViewModel.filterIncludeAll,
         imageCacheEnabled = feedsViewModel.imageCacheEnabled,
         onAddToBlacklist = { category -> feedsViewModel.addToBlacklist(category) },
+        serverConfigs = feedsViewModel.serverConfigs,
         modifier = modifier
     )
 }
@@ -251,7 +252,8 @@ fun FeedsScreenContent(
     categoryWhitelist: Set<String> = emptySet(),
     filterIncludeAll: Boolean = true,
     imageCacheEnabled: Boolean = true,
-    onAddToBlacklist: (String) -> Unit = {}
+    onAddToBlacklist: (String) -> Unit = {},
+    serverConfigs: List<com.ddyy.zenfeed.data.ServerConfig> = emptyList()
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
@@ -1085,6 +1087,7 @@ fun FeedsScreenContent(
 
                                             FeedItem(
                                                 feed = feed,
+                                                serverConfigs = serverConfigs,
                                                 onClick = { onFeedClick(feed) },
                                                 onPlayPodcastList = if (!feed.labels.podcastUrl.isNullOrBlank()) {
                                                     {

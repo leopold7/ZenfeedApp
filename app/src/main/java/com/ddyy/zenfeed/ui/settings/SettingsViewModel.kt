@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ddyy.zenfeed.data.SettingsDataStore
+import com.ddyy.zenfeed.data.ServerConfig
 import com.ddyy.zenfeed.data.network.ApiClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,8 +36,9 @@ data class SettingsUiState(
     val aiApiKey: String = "",
     val aiModelName: String = "",
     val aiPrompt: String = "",
+    val serverConfigs: List<ServerConfig> = emptyList(),
     val isLoading: Boolean = false,
-    val message: String = "")
+    val message: String ="")
 
 /**
  * 设置页面的ViewModel
@@ -96,6 +98,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val categoryWhitelist = settingsDataStore.categoryWhitelist.first()
                 val filterIncludeAll = settingsDataStore.filterIncludeAll.first()
                 val imageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
+                val serverConfigs = settingsDataStore.serverConfigs.first()
             _uiState.value = _uiState.value.copy(
                 apiUrl = apiUrl,
                 backendUrl = backendUrl,
@@ -113,6 +116,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 categoryWhitelist = categoryWhitelist,
                 filterIncludeAll = filterIncludeAll,
                 imageCacheEnabled = imageCacheEnabled,
+                serverConfigs = serverConfigs,
                 aiApiUrl = settingsDataStore.aiApiUrl.first(),
                 aiApiKey = settingsDataStore.aiApiKey.first(),
                 aiModelName = settingsDataStore.aiModelName.first(),
@@ -574,7 +578,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 settingsDataStore.saveFilterIncludeAll(currentFilterIncludeAll)
                 settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
                 
-                showMessage("分组过滤设置已保存")
+                showMessage("个性化设置已保存")
                 
             } catch (e: Exception) {
                 showMessage("保存失败：${e.message}")
@@ -679,11 +683,60 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
-        
-        /**
-         * 获取当前输入的AI提示词（用于UI显示）
-         */
-        fun getCurrentInputAiPrompt(): String = currentAiPrompt
+    }
+    
+    /**
+     * 重置单服务器配置（仅重置API地址和后端URL）
+     */
+    fun resetSingleServerSettings() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            
+            try {
+                // 仅重置API地址和后端URL
+                settingsDataStore.resetApiBaseUrl()
+                settingsDataStore.resetBackendUrl()
+                currentInputApiUrl = SettingsDataStore.DEFAULT_API_BASE_URL
+                currentInputBackendUrl = SettingsDataStore.DEFAULT_BACKEND_URL
+                
+                // 刷新API客户端以应用重置的设置
+                ApiClient.refreshApiService(getApplication())
+                
+                showMessage("服务器配置已重置")
+                
+            } catch (e: Exception) {
+                showMessage("重置失败：${e.message}")
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
+    }
+    
+    /**
+     * 获取当前输入的AI提示词（用于UI显示）
+     */
+    fun getCurrentInputAiPrompt(): String = currentAiPrompt
+    
+    /**
+     * 保存多服务器配置列表
+     * @param serverConfigs 服务器配置列表
+     */
+    fun saveServerConfigs(serverConfigs: List<ServerConfig>) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            
+            try {
+                settingsDataStore.saveServerConfigs(serverConfigs)
+                showMessage("多服务器配置已保存")
+                
+                // 更新UI状态
+                _uiState.value = _uiState.value.copy(serverConfigs = serverConfigs)
+            } catch (e: Exception) {
+                showMessage("保存多服务器配置失败：${e.message}")
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
     }
     
     /**

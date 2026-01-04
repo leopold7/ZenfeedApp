@@ -54,6 +54,10 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
     // 标记是否在详情页中（用于检测返回）
     var isInDetailPage by mutableStateOf(false)
         private set
+    
+    // 标记是否需要刷新主页Feed列表
+    var shouldRefreshHome by mutableStateOf(false)
+        private set
 
     fun selectFeed(feed: Feed) {
         selectedFeed = feed
@@ -213,6 +217,20 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
         lastViewedFeed = null
         detailEntryCategory = ""
         isInDetailPage = false
+    }
+    
+    /**
+     * 请求刷新主页Feed列表
+     */
+    fun requestRefreshHome() {
+        shouldRefreshHome = true
+    }
+    
+    /**
+     * 标记主页刷新已完成
+     */
+    fun markRefreshHomeCompleted() {
+        shouldRefreshHome = false
     }
     /**
      * 检查应用更新

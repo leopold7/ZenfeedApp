@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ddyy.zenfeed.ZenFeedApplication
 import com.ddyy.zenfeed.data.Feed
+import com.ddyy.zenfeed.data.ServerConfig
 import com.ddyy.zenfeed.extension.getDisplayContent
 import com.ddyy.zenfeed.extension.getPodcastButtonContainerColor
 import com.ddyy.zenfeed.extension.getPodcastButtonContentColor
@@ -55,6 +56,7 @@ import com.ddyy.zenfeed.extension.withReadSummaryAlpha
 @Composable
 fun FeedItem(
     feed: Feed,
+    serverConfigs: List<ServerConfig>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onPlayPodcastList: (() -> Unit)? = null,
@@ -140,6 +142,26 @@ fun FeedItem(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+
+                        // 显示服务器标识（如果有）
+                        if (!feed.serverId.isNullOrEmpty()) {
+                            // 根据serverId查找对应的服务器名称
+                            val serverName = serverConfigs.find { it.id == feed.serverId }?.name ?: feed.serverId
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = serverName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                maxLines = 1,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
 
                         Spacer(modifier = Modifier.width(8.dp))
 

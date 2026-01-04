@@ -43,6 +43,18 @@ object ApiClient {
         // 获取当前设置
         val currentUrl = settingsDataStore.apiBaseUrl.first()
         
+        return getApiServiceForUrl(currentUrl, context)
+    }
+    
+    /**
+     * 根据指定的URL获取API服务实例
+     * @param baseUrl 服务器基础URL
+     * @param context 上下文，用于读取代理设置
+     * @return ApiService实例
+     */
+    suspend fun getApiServiceForUrl(baseUrl: String, context: Context): ApiService {
+        val settingsDataStore = SettingsDataStore(context)
+        
         val proxyConfig = run {
             val enabled = settingsDataStore.proxyEnabled.first()
             val host = settingsDataStore.proxyHost.first()
@@ -52,22 +64,13 @@ object ApiClient {
             "$enabled:$host:$port:$username:$password"
         }
         
-        // 如果URL或代理配置发生变化，重新创建服务
-        if (_apiService == null || _currentBaseUrl != currentUrl || _currentProxyConfig != proxyConfig) {
-            // 在 synchronized 块外创建新的服务实例
-            val newApiService = createApiService(currentUrl, context)
-            
-            synchronized(this) {
-                // 双重检查锁定模式
-                if (_apiService == null || _currentBaseUrl != currentUrl || _currentProxyConfig != proxyConfig) {
-                    _currentBaseUrl = currentUrl
-                    _currentProxyConfig = proxyConfig
-                    _apiService = newApiService
-                }
-            }
+        // 检查是否为当前主服务器URL
+        if (baseUrl == _currentBaseUrl && _currentProxyConfig == proxyConfig && _apiService != null) {
+            return _apiService!!
         }
         
-        return _apiService!!
+        // 直接创建新的服务实例，不缓存，因为是为特定服务器创建的
+        return createApiService(baseUrl, context)
     }
     
     /**

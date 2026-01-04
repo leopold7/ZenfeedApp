@@ -11,6 +11,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.FeedRepository
+import com.ddyy.zenfeed.data.ServerConfig
 import com.ddyy.zenfeed.data.SettingsDataStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -114,6 +115,10 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     // 是否文章显示图片
     var imageCacheEnabled: Boolean by mutableStateOf(true) // 默认文章显示图片
     
+    // 服务器配置列表
+    var serverConfigs: List<ServerConfig> by mutableStateOf(emptyList())
+        private set
+    
     // 监听分组模式变化，更新Feed列表
     private val _groupingModeFlow = MutableStateFlow(groupingMode)
     
@@ -195,6 +200,18 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
                 updateFilteredFeeds()
             }
         }
+        
+        // 持续监听服务器配置变化
+        viewModelScope.launch {
+            settingsDataStore.serverConfigs.collect {
+                if (serverConfigs != it) {
+                    serverConfigs = it
+                    Log.d("FeedsViewModel", "服务器配置已更新: ${it.size} 个服务器")
+                    // 服务器配置变化时，刷新Feed列表
+                    getFeeds(forceRefresh = true)
+                }
+            }
+        }
 
         // 加载初始数据和设置
         viewModelScope.launch {
@@ -205,6 +222,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             val initialFilterIncludeAll = settingsDataStore.filterIncludeAll.first()
             val initialGroupingMode = settingsDataStore.homeGroupingMode.first()
             val initialImageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
+            val initialServerConfigs = settingsDataStore.serverConfigs.first()
 
             categoryBlacklist = initialBlacklist
             categoryWhitelist = initialWhitelist
@@ -212,6 +230,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             filterIncludeAll = initialFilterIncludeAll
             groupingMode = initialGroupingMode
             imageCacheEnabled = initialImageCacheEnabled
+            serverConfigs = initialServerConfigs
             _groupingModeFlow.value = initialGroupingMode
 
             Log.d("FeedsViewModel", "初始分类黑名单已加载: $initialBlacklist")
@@ -219,6 +238,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             Log.d("FeedsViewModel", "初始过滤类型已加载: $initialFilterType")
             Log.d("FeedsViewModel", "初始分组模式已加载: $initialGroupingMode")
             Log.d("FeedsViewModel", "初始图片缓存设置已加载: $initialImageCacheEnabled")
+            Log.d("FeedsViewModel", "初始服务器配置已加载: ${initialServerConfigs.size} 个服务器")
 
             loadReadFeedIds()
             loadSearchHistory()
@@ -474,7 +494,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
      * 标记文章为已读
      */
     fun markFeedAsRead(feed: Feed) {
-        val feedId = "${feed.labels.title ?: ""}-${feed.time}"
+        val feedId = "${feed.labels.title ?: ""}-${feed.time}-${feed.serverId ?: ""}"
         if (!readFeedIds.contains(feedId)) {
             readFeedIds.add(feedId)
             // 立即持久化到存储
@@ -488,7 +508,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
      * 标记文章为未读
      */
     fun markFeedAsUnread(feed: Feed) {
-        val feedId = "${feed.labels.title ?: ""}-${feed.time}"
+        val feedId = "${feed.labels.title ?: ""}-${feed.time}-${feed.serverId ?: ""}"
         if (readFeedIds.contains(feedId)) {
             readFeedIds.remove(feedId)
             // 立即从持久化存储中移除
@@ -505,12 +525,12 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     private fun detectNewContent(oldFeeds: List<Feed>, newFeeds: List<Feed>): Int {
         if (oldFeeds.isEmpty()) return 0 // 初次加载不算新增
         
-        // 创建旧Feed的唯一标识符集合（使用标题+时间作为唯一标识）
-        val oldFeedIds = oldFeeds.map { "${it.labels.title ?: ""}-${it.time}" }.toSet()
+        // 创建旧Feed的唯一标识符集合（使用标题+时间+serverId作为唯一标识）
+        val oldFeedIds = oldFeeds.map { "${it.labels.title ?: ""}-${it.time}-${it.serverId ?: ""}" }.toSet()
         
         // 计算新Feed中不在旧Feed集合中的数量
         val newContentCount = newFeeds.count { feed ->
-            val feedId = "${feed.labels.title ?: ""}-${feed.time}"
+            val feedId = "${feed.labels.title ?: ""}-${feed.time}-${feed.serverId ?: ""}"
             !oldFeedIds.contains(feedId)
         }
         
@@ -543,7 +563,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
      * 检查文章是否已读
      */
     private fun isFeedRead(feed: Feed): Boolean {
-        val feedId = "${feed.labels.title ?: ""}-${feed.time}"
+        val feedId = "${feed.labels.title ?: ""}-${feed.time}-${feed.serverId ?: ""}"
         return readFeedIds.contains(feedId)
     }
     

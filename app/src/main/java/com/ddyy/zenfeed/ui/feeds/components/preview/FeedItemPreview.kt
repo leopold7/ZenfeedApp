@@ -36,6 +36,7 @@ fun FeedItemPreview() {
                     time = "2023-10-27T12:00:00Z",
                     isRead = false
                 ),
+                serverConfigs = emptyList(),
                 onClick = {}
             )
 
@@ -60,6 +61,7 @@ fun FeedItemPreview() {
                     time = "2023-10-27T11:00:00Z",
                     isRead = true
                 ),
+                serverConfigs = emptyList(),
                 onClick = {}
             )
         }

@@ -138,7 +138,7 @@ fun SettingsScreen(
                 onApiUrlChange = settingsViewModel::updateApiUrl,
                 onBackendUrlChange = settingsViewModel::updateBackendUrl,
                 onSaveAll = settingsViewModel::saveAllSettings,
-                onReset = settingsViewModel::resetAllSettings
+                onReset = settingsViewModel::resetSingleServerSettings
             )
             
             // 个性化设置卡片
@@ -150,6 +150,7 @@ fun SettingsScreen(
                 filterIncludeAll = uiState.filterIncludeAll,
                 imageCacheEnabled = uiState.imageCacheEnabled,
                 isLoading = uiState.isLoading,
+                navController = navController,
                 onHomeGroupingModeChange = {
                     settingsViewModel.updateHomeGroupingMode(it)
                     settingsViewModel.saveHomeGroupingMode()
@@ -692,6 +693,7 @@ private fun PersonalizationSettingsCard(
     filterIncludeAll: Boolean,
     imageCacheEnabled: Boolean,
     isLoading: Boolean,
+    navController: NavController,
     onHomeGroupingModeChange: (String) -> Unit,
     onCategoryFilterTypeChange: (String) -> Unit,
     onCategoryBlacklistChange: (MutableSet<String>) -> Unit,
@@ -738,6 +740,29 @@ private fun PersonalizationSettingsCard(
                     },
                     enabled = !isLoading
                 )
+            }
+            
+            // 多服务器配置选项
+            Column {
+                Text(
+                    text = "多服务器配置",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                // 跳转按钮
+                OutlinedButton(
+                    onClick = { navController.navigate("multiServerConfig") },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "管理多服务器配置",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
 
             Column {

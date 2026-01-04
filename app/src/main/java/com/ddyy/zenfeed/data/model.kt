@@ -17,6 +17,8 @@ data class Feed(
     @SerializedName("labels") val labels: Labels, // Feed的元数据标签，包含类型、来源、标题等信息
     @SerializedName("time") val time: String, // Feed被系统记录或处理的时间戳(RFC3339格式)
     @SerializedName("score") val score: Float? = null, // 语义搜索的相关性得分，得分越高相关性越强
+    // 服务器标识，用于区分不同服务器的文章
+    val serverId: String? = "", // 默认为空，表示主服务器，标记为可空以处理Gson反序列化问题
     // 阅读状态，默认为未读
     val isRead: Boolean = false
 ) {
@@ -127,4 +129,14 @@ data class PlaylistInfo(
     val hasPrevious: Boolean,
     val isRepeat: Boolean,
     val isShuffle: Boolean
+)
+
+/**
+ * 服务器配置数据模型
+ */
+data class ServerConfig(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String = "",
+    val apiUrl: String = "",
+    val backendUrl: String = ""
 )

@@ -32,6 +32,7 @@ import com.ddyy.zenfeed.ui.logging.LoggingScreen
 import com.ddyy.zenfeed.ui.player.PlayerViewModel
 import com.ddyy.zenfeed.ui.settings.SettingsScreen
 import com.ddyy.zenfeed.ui.settings.SettingsViewModel
+import com.ddyy.zenfeed.ui.settings.MultiServerConfigScreen
 import com.ddyy.zenfeed.ui.webview.WebViewScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -426,6 +427,45 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         ) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             SettingsScreen(
+                navController = navController,
+                settingsViewModel = settingsViewModel
+            )
+        }
+        composable(
+            "multiServerConfig",
+            enterTransition = {
+                // 组合滑动和淡入动画，减少闪烁
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                    animationSpec = tween(
+                        durationMillis = 350,
+                        easing = FastOutSlowInEasing
+                    )
+                ) + fadeIn(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            },
+            exitTransition = {
+                // 组合滑动和淡出动画，减少闪烁
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                    animationSpec = tween(
+                        durationMillis = 350,
+                        easing = FastOutSlowInEasing
+                    )
+                ) + fadeOut(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            }
+        ) {
+            val settingsViewModel = viewModel<SettingsViewModel>()
+            MultiServerConfigScreen(
                 navController = navController,
                 settingsViewModel = settingsViewModel
             )

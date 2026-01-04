@@ -11,6 +11,18 @@
     <string name="theme_saved">主题设置已保存</string>
     <string name="theme_save_failed">保存主题设置失败：</string>
     
+    <!-- 多服务器配置 -->
+    <string name="multi_server_config">多服务器配置</string>
+    <string name="server_name">服务器名称</string>
+    <string name="server_name_placeholder">输入服务器名称</string>
+    <string name="api_url">API地址</string>
+    <string name="api_url_placeholder">https://example.com</string>
+    <string name="backend_url">后端URL</string>
+    <string name="backend_url_placeholder">http://example.com:1300</string>
+    <string name="add_server">添加服务器</string>
+    <string name="delete_server">删除</string>
+    <string name="manage_multi_server_config">管理多服务器配置</string>
+    
     <!-- 通用 -->
     <string name="reset">重置</string>
     <string name="save">保存</string>

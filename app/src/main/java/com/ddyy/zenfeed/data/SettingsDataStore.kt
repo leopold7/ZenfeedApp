@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -39,6 +41,7 @@ class SettingsDataStore(private val context: Context) {
         private val CATEGORY_WHITELIST_KEY = stringSetPreferencesKey("category_whitelist")
         private val FILTER_INCLUDE_ALL_KEY = booleanPreferencesKey("filter_include_all")
         private val IMAGE_CACHE_ENABLED_KEY = booleanPreferencesKey("image_cache_enabled")
+        private val SERVER_CONFIGS_KEY = stringPreferencesKey("server_configs")
         
         // AI模型配置相关的键
         private val AI_API_URL_KEY = stringPreferencesKey("ai_api_url")
@@ -249,6 +252,25 @@ class SettingsDataStore(private val context: Context) {
         .map { preferences ->
             preferences[FILTER_INCLUDE_ALL_KEY] ?: DEFAULT_FILTER_INCLUDE_ALL
         }
+    
+    /**
+     * 获取多服务器配置列表的Flow
+     */
+    val serverConfigs: Flow<List<ServerConfig>> = context.settingsDataStore.data
+        .map {
+            preferences ->
+            val json = preferences[SERVER_CONFIGS_KEY] ?: ""
+            if (json.isEmpty()) {
+                emptyList()
+            } else {
+                try {
+                    val type = object : TypeToken<List<ServerConfig>>() {}.type
+                    Gson().fromJson(json, type)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
+        }
 
     /**
      * 保存API基础地址
@@ -426,6 +448,26 @@ class SettingsDataStore(private val context: Context) {
     }
     
     /**
+     * 保存多服务器配置列表
+     * @param serverConfigs 要保存的服务器配置列表
+     */
+    suspend fun saveServerConfigs(serverConfigs: List<ServerConfig>) {
+        context.settingsDataStore.edit { preferences ->
+            val json = Gson().toJson(serverConfigs)
+            preferences[SERVER_CONFIGS_KEY] = json
+        }
+    }
+    
+    /**
+     * 重置多服务器配置列表
+     */
+    suspend fun resetServerConfigs() {
+        context.settingsDataStore.edit { preferences ->
+            preferences.remove(SERVER_CONFIGS_KEY)
+        }
+    }
+    
+    /**
      * 获取当前保存的API基础地址（同步方式，用于初始化）
      * @return 当前保存的API基础地址，如果没有则返回默认地址
      */
@@ -475,6 +517,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[AI_API_KEY_KEY] = DEFAULT_AI_API_KEY
             preferences[AI_MODEL_NAME_KEY] = DEFAULT_AI_MODEL_NAME
             preferences[AI_PROMPT_KEY] = DEFAULT_AI_PROMPT
+            preferences.remove(SERVER_CONFIGS_KEY)
         }
     }
     

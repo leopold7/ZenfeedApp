@@ -75,19 +75,62 @@ class FeedRepository(private val context: Context) {
                 summarize = false
             )
 
-            // 使用动态API服务和后端URL
-            val apiService = ApiClient.getApiService(context)
-            val backendUrl = settingsDataStore.backendUrl.first()
-            val response = apiService.getFeeds(
-                backendUrl = backendUrl,
-                body = requestBody
-            )
-
+            // 获取所有服务器配置
+            val allServerConfigs = settingsDataStore.serverConfigs.first()
+            val mainBackendUrl = settingsDataStore.backendUrl.first()
+            val mainApiUrl = settingsDataStore.apiBaseUrl.first()
+            
+            // 存储所有Feed的列表
+            val allFeeds = mutableListOf<Feed>()
+            
+            // 1. 获取主服务器数据
+            try {
+                val mainApiService = ApiClient.getApiService(context)
+                val mainResponse = mainApiService.getFeeds(
+                    backendUrl = mainBackendUrl,
+                    body = requestBody
+                )
+                
+                // 为主服务器的Feed添加空的serverId标识
+                val mainFeeds = mainResponse.feeds.map { it.copy(serverId = "") }
+                allFeeds.addAll(mainFeeds)
+                Log.d("FeedRepository", "已获取主服务器 Feed 数据，共 ${mainFeeds.size} 条")
+            } catch (e: Exception) {
+                Log.e("FeedRepository", "获取主服务器数据失败，继续处理其他服务器", e)
+            }
+            
+            // 2. 遍历获取所有配置的服务器数据
+            for (serverConfig in allServerConfigs) {
+                try {
+                    // 使用服务器配置的API地址创建独立的API请求
+                    val serverApiService = ApiClient.getApiServiceForUrl(serverConfig.apiUrl, context)
+                    val serverResponse = serverApiService.getFeeds(
+                        backendUrl = serverConfig.backendUrl,
+                        body = requestBody
+                    )
+                    
+                    // 为该服务器的Feed添加serverId标识（使用服务器id而不是名称）
+                    val serverFeeds = serverResponse.feeds.map { it.copy(serverId = serverConfig.id) }
+                    allFeeds.addAll(serverFeeds)
+                    Log.d("FeedRepository", "已获取服务器 ${serverConfig.name} 的 Feed 数据，共 ${serverFeeds.size} 条")
+                } catch (e: Exception) {
+                    Log.e("FeedRepository", "获取服务器 ${serverConfig.name} 数据失败，继续处理其他服务器", e)
+                }
+            }
+            
+            // 按时间倒序排序所有Feed
+            val sortedFeeds = allFeeds.sortedByDescending { it.time }
+            
             // 缓存新获取的数据
-            cacheFeeds(response.feeds)
-            Log.d("FeedRepository", "从网络获取并缓存 Feed 数据")
+            cacheFeeds(sortedFeeds)
+            Log.d("FeedRepository", "从网络获取并缓存 Feed 数据，共 ${sortedFeeds.size} 条")
 
-            Result.success(response)
+            Result.success(
+                FeedResponse(
+                    feeds = sortedFeeds,
+                    count = sortedFeeds.size
+                )
+            )
         } catch (e: Exception) {
             Log.e("FeedRepository", "获取摘要失败", e)
 
