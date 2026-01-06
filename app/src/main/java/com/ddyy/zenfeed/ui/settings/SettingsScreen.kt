@@ -70,14 +70,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ddyy.zenfeed.R
 import com.ddyy.zenfeed.data.SettingsDataStore
+import com.ddyy.zenfeed.ui.SharedViewModel
 import com.ddyy.zenfeed.ui.theme.ZenfeedTheme
+import android.widget.Toast
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    sharedViewModel: SharedViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -190,9 +197,20 @@ fun SettingsScreen(
             // 更新设置卡片
             UpdateSettingsCard(
                 checkUpdateOnStart = uiState.checkUpdateOnStart,
+                updateBranch = uiState.updateBranch,
                 onCheckUpdateOnStartChange = {
                     settingsViewModel.updateCheckUpdateOnStart(it)
                     settingsViewModel.saveCheckUpdateOnStart()
+                },
+                onUpdateBranchChange = { branch ->
+                    settingsViewModel.updateUpdateBranch(branch)
+                    settingsViewModel.saveUpdateBranch()
+                },
+                onCheckUpdate = {
+                    // 使用传入的 sharedViewModel 实例
+                    sharedViewModel.checkForUpdate()
+                    // 显示正在检查更新的提示
+                    Toast.makeText(context, "正在检查更新...", Toast.LENGTH_SHORT).show()
                 },
                 isLoading = uiState.isLoading
             )
@@ -631,10 +649,14 @@ private fun ProxySettingCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UpdateSettingsCard(
     checkUpdateOnStart: Boolean,
+    updateBranch: String,
     onCheckUpdateOnStartChange: (Boolean) -> Unit,
+    onUpdateBranchChange: (String) -> Unit,
+    onCheckUpdate: () -> Unit,
     isLoading: Boolean
 ) {
     Card(
@@ -672,6 +694,111 @@ private fun UpdateSettingsCard(
                     onCheckedChange = onCheckUpdateOnStartChange,
                     enabled = !isLoading
                 )
+            }
+
+            // 分支选择器
+            Column {
+                Text(
+                    text = "更新分支",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // 分支选项
+                val branchOptions = mapOf(
+                    "master" to "master (稳定版)",
+                    "dev" to "dev (开发版)"
+                )
+                
+                // 当前选中的选项文本
+                val selectedOptionText = branchOptions[updateBranch] ?: "master (稳定版)"
+                
+                // Dialog状态
+                var showDialog by remember { mutableStateOf(false) }
+                
+                // 点击按钮触发Dialog
+                OutlinedButton(
+                    onClick = { showDialog = true && !isLoading },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = selectedOptionText,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                
+                // 分支选择Dialog
+                if (showDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDialog = false },
+                        title = { Text("选择更新分支") },
+                        text = {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                branchOptions.forEach { (branch, text) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                onUpdateBranchChange(branch)
+                                                showDialog = false
+                                            }
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = text,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        RadioButton(
+                                            selected = updateBranch == branch,
+                                            onClick = {
+                                                onUpdateBranchChange(branch)
+                                                showDialog = false
+                                            },
+                                            enabled = !isLoading
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = { showDialog = false }
+                            ) {
+                                Text("关闭")
+                            }
+                        },
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
+            }
+
+            // 检查更新按钮
+            Column {
+                Text(
+                    text = "手动检查",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                OutlinedButton(
+                    onClick = onCheckUpdate,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "检查更新",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }
@@ -1112,11 +1239,14 @@ private fun AiSettingsCard(
 @Composable
 fun UpdateSettingsCardPreview() {
     ZenfeedTheme {
-        UpdateSettingsCard(
-            checkUpdateOnStart = true,
-            onCheckUpdateOnStartChange = {},
-            isLoading = false
-        )
-    }
+            UpdateSettingsCard(
+                checkUpdateOnStart = true,
+                updateBranch = "master",
+                onCheckUpdateOnStartChange = {},
+                onUpdateBranchChange = {},
+                onCheckUpdate = {},
+                isLoading = false
+            )
+        }
     
 }

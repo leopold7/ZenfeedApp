@@ -17,7 +17,10 @@ data class GithubRelease(
     val body: String, // 更新日志
 
     @SerializedName("assets")
-    val assets: List<Asset>
+    val assets: List<Asset>,
+    
+    @SerializedName("created_at")
+    val createdAt: String? = null // 创建时间，用于排序
 ) {
     data class Asset(
         @SerializedName("browser_download_url")

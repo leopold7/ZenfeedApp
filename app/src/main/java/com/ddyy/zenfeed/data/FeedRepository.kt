@@ -430,25 +430,55 @@ class FeedRepository private constructor(private val context: Context) {
     }
     /**
      * 检查应用更新
+     * @param branch 更新分支，可以是 "master", "dev"
      * @return 如果有新版本，则返回 GithubRelease 对象，否则返回 null
      */
-    suspend fun checkForUpdate(): GithubRelease? {
+    suspend fun checkForUpdate(branch: String = "master"): GithubRelease? {
         return try {
             val apiService = ApiClient.getApiService(context)
             // 替换为你的 GitHub 用户名和仓库名
-            val url = "https://api.github.com/repos/leopold7/ZenfeedApp/releases/latest"
-            val latestRelease = apiService.getLatestRelease(url)
-
-            // 比较版本号
-            // 我们移除 'v' 前缀来进行比较
-            val latestVersion = latestRelease.tagName.removePrefix("v")
+            val repoOwner = "leopold7"
+            val repoName = "ZenfeedApp"
             val currentVersion = BuildConfig.VERSION_NAME
-
-            if (isNewerVersion(latestVersion, currentVersion)) {
-                latestRelease
+            
+            var latestRelease: GithubRelease? = null
+            
+            if (branch == "dev") {
+                // 对于 dev 分支，获取所有 releases 并找到最新的 dev 版本
+                val allReleasesUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases"
+                val allReleases = apiService.getAllReleases(allReleasesUrl)
+                
+                // 过滤出包含 "dev" 的版本
+                val devReleases = allReleases.filter { it.tagName.contains("dev") }
+                
+                // 过滤出版本号大于当前版本的 dev 版本
+                val newerDevReleases = devReleases.filter { release ->
+                    val releaseVersion = release.tagName.removePrefix("v")
+                    isNewerVersion(releaseVersion, currentVersion, branch)
+                }
+                
+                if (newerDevReleases.isNotEmpty()) {
+                    // 从这些版本中选择时间戳最大的那个
+                    latestRelease = newerDevReleases.maxByOrNull { release ->
+                        // 从 tagName 中提取时间戳，例如从 "v1.5.0.dev.20251244105455" 中提取 "20251244105455"
+                        val tagName = release.tagName.removePrefix("v")
+                        val timestampMatch = Regex("dev\\.(\\d+)").find(tagName)
+                        timestampMatch?.groupValues?.get(1)?.toLongOrNull() ?: 0
+                    }!!
+                }
             } else {
-                null
+                // 对于 master 分支，使用 /latest 端点
+                val latestReleaseUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
+                latestRelease = apiService.getLatestRelease(latestReleaseUrl)
+                
+                // 对于 master 分支，直接与当前版本进行比较
+                val latestVersion = latestRelease.tagName.removePrefix("v")
+                if (!isNewerVersion(latestVersion, currentVersion, branch)) {
+                    latestRelease = null
+                }
             }
+            
+            latestRelease
         } catch (e: Exception) {
             Log.e("FeedRepository", "检查更新失败", e)
             null
@@ -458,17 +488,48 @@ class FeedRepository private constructor(private val context: Context) {
     /**
      * 比较两个版本字符串
      * 例如： "1.0.1" > "1.0.0"
+     * 支持 dev 版本格式： "1.5.0.dev.20251244105455"
      */
-    private fun isNewerVersion(latestVersion: String, currentVersion: String): Boolean {
-        val latestParts = latestVersion.split(".").map { it.toIntOrNull() ?: 0 }
-        val currentParts = currentVersion.split(".").map { it.toIntOrNull() ?: 0 }
-        val partCount = maxOf(latestParts.size, currentParts.size)
-
-        for (i in 0 until partCount) {
-            val latestPart = latestParts.getOrElse(i) { 0 }
-            val currentPart = currentParts.getOrElse(i) { 0 }
-            if (latestPart > currentPart) return true
-            if (latestPart < currentPart) return false
+    private fun isNewerVersion(latestVersion: String, currentVersion: String, branch: String = "master"): Boolean {
+        // 对于 dev 分支，我们需要特殊处理版本号
+        if (branch == "dev") {
+            // 提取核心版本号（移除 dev 后缀）
+            val latestCoreVersion = latestVersion.split("dev")[0].trimEnd('.')
+            val currentCoreVersion = currentVersion.split("dev")[0].trimEnd('.')
+            
+            // 比较核心版本号
+            val latestParts = latestCoreVersion.split(".").map { it.toIntOrNull() ?: 0 }
+            val currentParts = currentCoreVersion.split(".").map { it.toIntOrNull() ?: 0 }
+            val partCount = maxOf(latestParts.size, currentParts.size)
+            
+            for (i in 0 until partCount) {
+                val latestPart = latestParts.getOrElse(i) { 0 }
+                val currentPart = currentParts.getOrElse(i) { 0 }
+                if (latestPart > currentPart) return true
+                if (latestPart < currentPart) return false
+            }
+            
+            // 如果核心版本号相同，比较时间戳（对于 dev 版本）
+            if (latestVersion.contains("dev") && currentVersion.contains("dev")) {
+                val latestTimestamp = latestVersion.split("dev.")[1].toLongOrNull() ?: 0
+                val currentTimestamp = currentVersion.split("dev.")[1].toLongOrNull() ?: 0
+                return latestTimestamp > currentTimestamp
+            }
+            
+            // 如果一个是 dev 版本，另一个不是，dev 版本优先
+            return latestVersion.contains("dev") && !currentVersion.contains("dev")
+        } else {
+            // 对于 master 分支，只比较稳定版本号
+            val latestParts = latestVersion.split(".").map { it.toIntOrNull() ?: 0 }
+            val currentParts = currentVersion.split(".").map { it.toIntOrNull() ?: 0 }
+            val partCount = maxOf(latestParts.size, currentParts.size)
+            
+            for (i in 0 until partCount) {
+                val latestPart = latestParts.getOrElse(i) { 0 }
+                val currentPart = currentParts.getOrElse(i) { 0 }
+                if (latestPart > currentPart) return true
+                if (latestPart < currentPart) return false
+            }
         }
         return false
     }

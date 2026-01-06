@@ -1,6 +1,7 @@
 package com.ddyy.zenfeed.ui.navigation
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -22,11 +23,13 @@ import androidx.navigation.compose.rememberNavController
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.SettingsDataStore
 import com.ddyy.zenfeed.ui.SharedViewModel
+import com.ddyy.zenfeed.ui.UpdateManager
 import com.ddyy.zenfeed.ui.about.AboutScreen
 import com.ddyy.zenfeed.ui.feeds.FeedDetailScreen
 import com.ddyy.zenfeed.ui.feeds.FeedsScreen
 import com.ddyy.zenfeed.ui.feeds.FeedsUiState
 import com.ddyy.zenfeed.ui.feeds.FeedsViewModel
+import com.ddyy.zenfeed.ui.feeds.components.dialog.UpdateDialog
 import com.ddyy.zenfeed.ui.theme.shouldUseDarkTheme
 import com.ddyy.zenfeed.ui.logging.LoggingScreen
 import com.ddyy.zenfeed.ui.player.PlayerViewModel
@@ -429,7 +432,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             SettingsScreen(
                 navController = navController,
-                settingsViewModel = settingsViewModel
+                settingsViewModel = settingsViewModel,
+                sharedViewModel = sharedViewModel
             )
         }
         composable(
@@ -624,5 +628,22 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 onBack = { navController.popBackStack() }
             )
         }
+    }
+
+    // 全局更新对话框 - 无论用户在哪个页面，只要发现新版本，都会显示
+    val updateInfo = sharedViewModel.updateInfo
+    if (updateInfo != null) {
+        val updateManager = remember { UpdateManager(context) }
+        UpdateDialog(
+            releaseInfo = updateInfo,
+            onDismiss = { sharedViewModel.clearUpdateInfo() },
+            onConfirm = { downloadUrl ->
+                val apkAsset = updateInfo.assets.find { it.name.endsWith(".apk") }
+                if (apkAsset != null) {
+                    updateManager.startDownload(downloadUrl, apkAsset.name)
+                }
+                sharedViewModel.clearUpdateInfo()
+            }
+        )
     }
 }

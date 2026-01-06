@@ -19,4 +19,8 @@ interface ApiService {
     // 获取 GitHub 最新 Release
     @GET
     suspend fun getLatestRelease(@Url url: String): GithubRelease
+    
+    // 获取 GitHub 所有 Releases
+    @GET
+    suspend fun getAllReleases(@Url url: String): List<GithubRelease>
 }
