@@ -72,6 +72,8 @@ import com.ddyy.zenfeed.R
 import com.ddyy.zenfeed.data.SettingsDataStore
 import com.ddyy.zenfeed.ui.SharedViewModel
 import com.ddyy.zenfeed.ui.theme.ZenfeedTheme
+import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
+import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
 import android.widget.Toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -874,7 +876,7 @@ private fun PersonalizationSettingsCard(
                 
                 // 跳转按钮
                 OutlinedButton(
-                    onClick = { navController.navigate("multiServerConfig") },
+                    onClick = { navController.navigateToMultiServerConfig() },
                     enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
@@ -981,7 +983,7 @@ private fun PersonalizationSettingsCard(
                     )
                     
                     OutlinedButton(
-                        onClick = { navController.navigate("homeGroupingSettings") },
+                        onClick = { navController.navigateToHomeGroupingSettings() },
                         enabled = !isLoading,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)

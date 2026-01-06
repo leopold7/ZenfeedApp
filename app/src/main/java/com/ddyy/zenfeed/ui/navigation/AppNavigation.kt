@@ -8,6 +8,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +43,17 @@ import com.ddyy.zenfeed.ui.settings.SettingsViewModel
 import com.ddyy.zenfeed.ui.settings.MultiServerConfigScreen
 import com.ddyy.zenfeed.ui.settings.HomeGroupingSettingsScreen
 import com.ddyy.zenfeed.ui.webview.WebViewScreen
+import com.ddyy.zenfeed.extension.defaultEnterTransition
+import com.ddyy.zenfeed.extension.defaultExitTransition
+import com.ddyy.zenfeed.extension.defaultPopEnterTransition
+import com.ddyy.zenfeed.extension.defaultPopExitTransition
+import com.ddyy.zenfeed.extension.navigateToSettings
+import com.ddyy.zenfeed.extension.navigateToWebView
+import com.ddyy.zenfeed.extension.navigateToLogging
+import com.ddyy.zenfeed.extension.navigateToAbout
+import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
+import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
+import com.ddyy.zenfeed.extension.navigateToFeedDetail
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -78,7 +94,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 sharedViewModel.updateAllFeeds(feedsState.feeds)
                 
                 // 导航到feedDetail页面
-                navController.navigate("feedDetail") {
+                navController.navigateToFeedDetail {
                     // 如果当前不在feeds页面，先导航到feeds，然后到详情页
                     popUpTo("feeds") { inclusive = false }
                 }
@@ -92,10 +108,15 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = "feeds"
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
+        NavHost(
+            navController = navController,
+            startDestination = "feeds"
+        ) {
         composable(
             "feeds",
             popEnterTransition = {
@@ -127,16 +148,16 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                     sharedViewModel.updateDetailPageStatus(true)
                     // 标记文章为已读
                     feedsViewModel.markFeedAsRead(feed)
-                    navController.navigate("feedDetail")
+                    navController.navigateToFeedDetail()
                 },
                 onSettingsClick = {
-                    navController.navigate("settings")
+                    navController.navigateToSettings()
                 },
                 onLoggingClick = {
-                    navController.navigate("logging")
+                    navController.navigateToLogging()
                 },
                 onAboutClick = {
-                    navController.navigate("about")
+                    navController.navigateToAbout()
                 },
                 onPlayPodcastList = { feeds, startIndex ->
                     // 过滤出有播客URL的Feed
@@ -194,63 +215,10 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
         composable(
             "feedDetail",
-            enterTransition = {
-                // 进入时：从右向左滑入，延迟淡入以减少闪烁
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(
-                        durationMillis = 300,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 150,
-                        delayMillis = 50,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                // 退出时：先淡出再滑出，避免背景色闪烁
-                fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 100,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 250,
-                        delayMillis = 50,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            popEnterTransition = {
-                // 返回时列表页的进入动画：快速淡入
-                fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            popExitTransition = {
-                // 返回时详情页的退出动画：先淡出再滑出
-                fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 100,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 250,
-                        delayMillis = 50,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() },
+            popEnterTransition = { defaultPopEnterTransition() },
+            popExitTransition = { defaultPopExitTransition() }
         ) {
             // 确保使用最新的feeds数据，但要考虑播放器状态
             val currentFeedsState = feedsViewModel.feedsUiState
@@ -318,7 +286,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                     isDarkTheme = isDarkTheme,
                     onOpenWebView = { url, title ->
                         sharedViewModel.setWebViewData(url, title)
-                        navController.navigate("webview")
+                        navController.navigateToWebView()
                     },
                     onPlayPodcastList = { feeds, startIndex ->
                         // 过滤出有播客URL的Feed
@@ -356,36 +324,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
         composable(
             "webview",
-            enterTransition = {
-                // 组合滑动和淡入动画，减少闪烁
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                // 组合滑动和淡出动画，减少闪烁
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
         ) {
             val webViewData = sharedViewModel.webViewData
             if (webViewData != null) {
@@ -398,36 +338,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
         composable(
             "settings",
-            enterTransition = {
-                // 组合滑动和淡入动画，减少闪烁
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                // 组合滑动和淡出动画，减少闪烁
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
         ) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             SettingsScreen(
@@ -438,36 +350,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
         composable(
             "multiServerConfig",
-            enterTransition = {
-                // 组合滑动和淡入动画，减少闪烁
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                // 组合滑动和淡出动画，减少闪烁
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
         ) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             MultiServerConfigScreen(
@@ -477,34 +361,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
         composable(
             "homeGroupingSettings",
-            enterTransition = {
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
         ) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             val currentFeedsState = feedsViewModel.feedsUiState
@@ -556,36 +414,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
         composable(
             "logging",
-            enterTransition = {
-                // 组合滑动和淡入动画，减少闪烁
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                // 组合滑动和淡出动画，减少闪烁
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
         ) {
             LoggingScreen(
                 onBack = { navController.popBackStack() }
@@ -593,41 +423,14 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         }
         composable(
             "about",
-            enterTransition = {
-                // 组合滑动和淡入动画，减少闪烁
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                // 组合滑动和淡出动画，减少闪烁
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing
-                    )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
         ) {
             AboutScreen(
                 onBack = { navController.popBackStack() }
             )
         }
+    }
     }
 
     // 全局更新对话框 - 无论用户在哪个页面，只要发现新版本，都会显示
