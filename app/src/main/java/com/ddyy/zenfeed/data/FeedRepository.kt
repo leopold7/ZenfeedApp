@@ -10,7 +10,15 @@ import com.ddyy.zenfeed.data.model.GithubRelease
 import com.ddyy.zenfeed.data.network.ApiClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,7 +29,7 @@ import java.util.TimeZone
  * Feed数据仓库
  * 负责从API获取Feed数据，支持动态配置API地址和后端URL
  */
-class FeedRepository(private val context: Context) {
+class FeedRepository private constructor(private val context: Context) {
 
     private val settingsDataStore = SettingsDataStore(context)
     private val sharedPreferences: SharedPreferences =
@@ -30,6 +38,13 @@ class FeedRepository(private val context: Context) {
     private val faviconManager: FaviconManager by lazy {
         (context.applicationContext as ZenFeedApplication).faviconManager
     }
+    
+    // 协程作用域，用于在非协程上下文中触发 Flow
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    
+    // 已读状态变化通知
+    private val _readStateChanged = MutableSharedFlow<Unit>(replay = 0)
+    val readStateChanged: SharedFlow<Unit> = _readStateChanged.asSharedFlow()
 
     companion object {
         private const val CACHE_KEY_FEEDS = "cached_feeds"
@@ -37,6 +52,17 @@ class FeedRepository(private val context: Context) {
         private const val CACHE_KEY_READ_FEEDS = "read_feeds" // 已读文章ID集合
         private const val CACHE_KEY_SEARCH_HISTORY = "search_history" // 搜索历史记录
         private const val CACHE_EXPIRY_HOURS = 1 // 缓存过期时间（小时）
+        
+        @Volatile
+        private var instance: FeedRepository? = null
+        
+        fun getInstance(context: Context): FeedRepository {
+            return instance ?: synchronized(this) {
+                instance ?: FeedRepository(context.applicationContext).also {
+                    instance = it
+                }
+            }
+        }
     }
 
     /**
@@ -318,8 +344,10 @@ class FeedRepository(private val context: Context) {
             if (readFeedsJson != null) {
                 val type = object : TypeToken<List<String>>() {}.type
                 val readFeedsList = gson.fromJson<List<String>>(readFeedsJson, type)
+                Log.d("FeedRepository", "从SharedPreferences加载已读状态，数量: ${readFeedsList.size}")
                 readFeedsList.toSet()
             } else {
+                Log.d("FeedRepository", "SharedPreferences中没有已读状态数据")
                 emptySet()
             }
         } catch (e: Exception) {
@@ -333,8 +361,18 @@ class FeedRepository(private val context: Context) {
      */
     fun addReadFeedId(feedId: String) {
         val currentReadIds = getReadFeedIds().toMutableSet()
-        currentReadIds.add(feedId)
-        saveReadFeedIds(currentReadIds)
+        if (!currentReadIds.contains(feedId)) {
+            currentReadIds.add(feedId)
+            saveReadFeedIds(currentReadIds)
+            Log.d("FeedRepository", "已添加已读文章ID: $feedId，当前已读文章数: ${currentReadIds.size}")
+            // 触发已读状态变化通知
+            repositoryScope.launch {
+                _readStateChanged.emit(Unit)
+                Log.d("FeedRepository", "已发送已读状态变化通知")
+            }
+        } else {
+            Log.d("FeedRepository", "文章已标记为已读，跳过: $feedId")
+        }
     }
 
     /**
@@ -344,6 +382,10 @@ class FeedRepository(private val context: Context) {
         val currentReadIds = getReadFeedIds().toMutableSet()
         if (currentReadIds.remove(feedId)) {
             saveReadFeedIds(currentReadIds)
+            // 触发已读状态变化通知
+            repositoryScope.launch {
+                _readStateChanged.emit(Unit)
+            }
         }
     }
 

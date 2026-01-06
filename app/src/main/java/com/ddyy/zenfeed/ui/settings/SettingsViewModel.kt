@@ -35,6 +35,7 @@ data class SettingsUiState(
     val aiModelName: String = "",
     val aiPrompt: String = "",
     val serverConfigs: List<ServerConfig> = emptyList(),
+    val markPodcastAsRead: Boolean = true,
     val isLoading: Boolean = false,
     val message: String = "")
 
@@ -66,6 +67,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentAiApiKey = ""
     private var currentAiModelName = ""
     private var currentAiPrompt = ""
+    private var currentMarkPodcastAsRead = true
 
     init {
         // 初始化时加载当前设置
@@ -100,6 +102,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val aiApiKey = settingsDataStore.aiApiKey.first()
                 val aiModelName = settingsDataStore.aiModelName.first()
                 val aiPrompt = settingsDataStore.aiPrompt.first()
+                val markPodcastAsRead = settingsDataStore.markPodcastAsRead.first()
 
                 _uiState.value = _uiState.value.copy(
                     apiUrl = apiUrl,
@@ -120,6 +123,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     aiApiKey = aiApiKey,
                     aiModelName = aiModelName,
                     aiPrompt = aiPrompt,
+                    markPodcastAsRead = markPodcastAsRead,
                     isLoading = false
                 )
 
@@ -160,6 +164,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (currentAiPrompt.isEmpty()) {
                     currentAiPrompt = aiPrompt
                 }
+                currentMarkPodcastAsRead = markPodcastAsRead
                 currentThemeMode = themeMode
                 currentCheckUpdateOnStart = checkUpdateOnStart
             }
@@ -298,6 +303,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun updateAiPrompt(prompt: String) {
         currentAiPrompt = prompt
+    }
+    
+    /**
+     * 更新自动标记博客已读设置
+     * @param enabled 是否启用
+     */
+    fun updateMarkPodcastAsRead(enabled: Boolean) {
+        currentMarkPodcastAsRead = enabled
     }
 
     /**
@@ -547,6 +560,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 settingsDataStore.saveCategoryFilterConfigs(currentCategoryFilterConfigs)
                 settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
+                settingsDataStore.saveMarkPodcastAsRead(currentMarkPodcastAsRead)
                 
                 showMessage("个性化设置已保存")
                 
@@ -661,8 +675,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             currentAiApiKey = SettingsDataStore.DEFAULT_AI_API_KEY
             currentAiModelName = SettingsDataStore.DEFAULT_AI_MODEL_NAME
             currentAiPrompt = SettingsDataStore.DEFAULT_AI_PROMPT
+            currentMarkPodcastAsRead = SettingsDataStore.DEFAULT_MARK_PODCAST_AS_READ
 
-                // 刷新API客户端以应用重置的设置
+            // 刷新API客户端以应用重置的设置
                 ApiClient.refreshApiService(getApplication())
                 
                 showMessage("已重置为默认设置")

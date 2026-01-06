@@ -145,6 +145,7 @@ fun SettingsScreen(
             PersonalizationSettingsCard(
                 homeGroupingMode = uiState.homeGroupingMode,
                 imageCacheEnabled = uiState.imageCacheEnabled,
+                markPodcastAsRead = uiState.markPodcastAsRead,
                 isLoading = uiState.isLoading,
                 navController = navController,
                 onHomeGroupingModeChange = {
@@ -152,6 +153,7 @@ fun SettingsScreen(
                     settingsViewModel.saveHomeGroupingMode()
                 },
                 onImageCacheEnabledChange = settingsViewModel::updateImageCacheEnabled,
+                onMarkPodcastAsReadChange = settingsViewModel::updateMarkPodcastAsRead,
                 onSaveCategoryFilterSettings = settingsViewModel::saveCategoryFilterSettings
             )
             
@@ -680,10 +682,12 @@ private fun UpdateSettingsCard(
 private fun PersonalizationSettingsCard(
     homeGroupingMode: String,
     imageCacheEnabled: Boolean,
+    markPodcastAsRead: Boolean,
     isLoading: Boolean,
     navController: NavController,
     onHomeGroupingModeChange: (String) -> Unit,
     onImageCacheEnabledChange: (Boolean) -> Unit,
+    onMarkPodcastAsReadChange: (Boolean) -> Unit,
     onSaveCategoryFilterSettings: () -> Unit
 ) {
     Card(
@@ -851,6 +855,26 @@ private fun PersonalizationSettingsCard(
                     checked = imageCacheEnabled,
                     onCheckedChange = {
                         onImageCacheEnabledChange(it)
+                        onSaveCategoryFilterSettings()
+                    },
+                    enabled = !isLoading
+                )
+            }
+            
+            // 听博客自动标记已读开关
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "听博客自动标记已读",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = markPodcastAsRead,
+                    onCheckedChange = {
+                        onMarkPodcastAsReadChange(it)
                         onSaveCategoryFilterSettings()
                     },
                     enabled = !isLoading

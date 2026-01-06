@@ -15,7 +15,7 @@ import com.ddyy.zenfeed.data.model.GithubRelease
 import kotlinx.coroutines.launch
 
 class SharedViewModel(application: Application) : AndroidViewModel(application) {
-    private val feedRepository = FeedRepository(application)
+    private val feedRepository = FeedRepository.getInstance(application)
 
     var selectedFeed by mutableStateOf<Feed?>(null)
         private set

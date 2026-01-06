@@ -25,6 +25,7 @@ import androidx.core.graphics.drawable.IconCompat
 import androidx.media.session.MediaButtonReceiver
 import com.ddyy.zenfeed.data.FaviconManager
 import com.ddyy.zenfeed.data.Feed
+import com.ddyy.zenfeed.data.FeedRepository
 import com.ddyy.zenfeed.data.PlaylistInfo
 import com.ddyy.zenfeed.data.network.ApiClient
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +42,7 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
     private var mediaPlayer: MediaPlayer? = null
     private val binder = LocalBinder()
     private lateinit var faviconManager: FaviconManager
+    private lateinit var feedRepository: FeedRepository
     private var playlist: List<Feed> = emptyList()
     private var currentTrackIndex = -1
     private var isPrepared = false
@@ -110,6 +112,7 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
         Log.d("PlayerService", "PlayerService onCreate")
         createNotificationChannel()
         faviconManager = FaviconManager(this)
+        feedRepository = FeedRepository.getInstance(this)
         
         // 初始化AudioManager
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -237,8 +240,22 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
         currentTrackFavicon = null // 为新曲目重置图标
         stopProgressUpdate()
 
-        // 在后台获取图标
+        // 获取当前播放的Feed
         val track = playlist.getOrNull(currentTrackIndex)
+
+        // 在后台协程中标记文章为已读（播放启动前）
+        if (track != null) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val feedId = "${track.labels.title ?: ""}-${track.time}-${track.serverId ?: ""}"
+                    feedRepository.addReadFeedId(feedId)
+                } catch (e: Exception) {
+                    Log.e("PlayerService", "标记文章为已读时出错", e)
+                }
+            }
+        }
+
+        // 在后台获取图标
         if (track != null) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {

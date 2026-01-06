@@ -40,6 +40,9 @@ class SettingsDataStore(private val context: Context) {
         private val IMAGE_CACHE_ENABLED_KEY = booleanPreferencesKey("image_cache_enabled")
         private val SERVER_CONFIGS_KEY = stringPreferencesKey("server_configs")
         
+        // 自动标记博客已读相关的键
+        private val MARK_PODCAST_AS_READ_KEY = booleanPreferencesKey("mark_podcast_as_read")
+        
         // AI模型配置相关的键
         private val AI_API_URL_KEY = stringPreferencesKey("ai_api_url")
         private val AI_API_KEY_KEY = stringPreferencesKey("ai_api_key")
@@ -66,6 +69,9 @@ class SettingsDataStore(private val context: Context) {
         const val DEFAULT_HOME_GROUPING_MODE = "category" // 可以是 "category", "source", "category,source", "none"
         
         const val DEFAULT_IMAGE_CACHE_ENABLED = true // 是否文章显示图片
+        
+        // 默认的自动标记博客已读设置
+        const val DEFAULT_MARK_PODCAST_AS_READ = true // 听博客时自动标记为已读
         
         // 默认的AI模型配置
         const val DEFAULT_AI_API_URL = "https://api.openai.com/v1"
@@ -248,6 +254,14 @@ class SettingsDataStore(private val context: Context) {
                 }
             }
         }
+    
+    /**
+     * 获取自动标记博客已读设置的Flow
+     */
+    val markPodcastAsRead: Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[MARK_PODCAST_AS_READ_KEY] ?: DEFAULT_MARK_PODCAST_AS_READ
+        }
 
     /**
      * 保存API基础地址
@@ -407,6 +421,16 @@ class SettingsDataStore(private val context: Context) {
     }
     
     /**
+     * 保存自动标记博客已读设置
+     * @param enabled 是否启用自动标记博客已读
+     */
+    suspend fun saveMarkPodcastAsRead(enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[MARK_PODCAST_AS_READ_KEY] = enabled
+        }
+    }
+    
+    /**
      * 重置多服务器配置列表
      */
     suspend fun resetServerConfigs() {
@@ -458,6 +482,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[HOME_GROUPING_MODE_KEY] = DEFAULT_HOME_GROUPING_MODE
             preferences[CATEGORY_FILTER_CONFIGS_KEY] = ""
             preferences[IMAGE_CACHE_ENABLED_KEY] = DEFAULT_IMAGE_CACHE_ENABLED
+            preferences[MARK_PODCAST_AS_READ_KEY] = DEFAULT_MARK_PODCAST_AS_READ
             preferences[AI_API_URL_KEY] = DEFAULT_AI_API_URL
             preferences[AI_API_KEY_KEY] = DEFAULT_AI_API_KEY
             preferences[AI_MODEL_NAME_KEY] = DEFAULT_AI_MODEL_NAME

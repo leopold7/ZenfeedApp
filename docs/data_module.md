@@ -33,8 +33,8 @@
 **使用示例**：
 
 ```kotlin
-// 创建Repository实例
-val feedRepository = FeedRepository(context)
+// 获取Repository单例实例
+val feedRepository = FeedRepository.getInstance(context)
 
 // 获取Feed列表
 suspend fun fetchFeeds() {

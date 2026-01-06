@@ -36,7 +36,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     // 用于存储每个分类列表的滚动位置 <Category, Pair<Index, Offset>>
     val scrollPositions = mutableMapOf<String, Pair<Int, Int>>()
     
-    private val feedRepository = FeedRepository(application.applicationContext)
+    private val feedRepository = FeedRepository.getInstance(application.applicationContext)
     private val settingsDataStore = SettingsDataStore(application.applicationContext)
 
     var feedsUiState: FeedsUiState by mutableStateOf(FeedsUiState.Loading)
@@ -163,6 +163,14 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         
+        // 监听已读状态变化
+        viewModelScope.launch {
+            feedRepository.readStateChanged.collect {
+                loadReadFeedIds()
+                updateFilteredFeeds()
+            }
+        }
+        
         // 持续监听服务器配置变化
         viewModelScope.launch {
             settingsDataStore.serverConfigs.collect {
@@ -234,6 +242,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun loadReadFeedIds() {
         val persistedReadIds = feedRepository.getReadFeedIds()
+        Log.d("FeedsViewModel", "从持久化存储加载已读状态，数量: ${persistedReadIds.size}")
         readFeedIds.clear()
         readFeedIds.addAll(persistedReadIds)
         Log.d("FeedsViewModel", "已加载已读状态，共 ${readFeedIds.size} 条")
@@ -455,7 +464,9 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
         if (!readFeedIds.contains(feedId)) {
             readFeedIds.add(feedId)
             // 立即持久化到存储
-            feedRepository.addReadFeedId(feedId)
+            viewModelScope.launch {
+                feedRepository.addReadFeedId(feedId)
+            }
             updateFilteredFeeds() // 重新更新UI以反映阅读状态变化
             Log.d("FeedsViewModel", "标记文章为已读: ${feed.labels.title ?: "未知标题"}")
         }
@@ -469,7 +480,9 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
         if (readFeedIds.contains(feedId)) {
             readFeedIds.remove(feedId)
             // 立即从持久化存储中移除
-            feedRepository.removeReadFeedId(feedId)
+            viewModelScope.launch {
+                feedRepository.removeReadFeedId(feedId)
+            }
             updateFilteredFeeds() // 重新更新UI以反映阅读状态变化
             Log.d("FeedsViewModel", "标记文章为未读: ${feed.labels.title ?: "未知标题"}")
         }
@@ -521,7 +534,8 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun isFeedRead(feed: Feed): Boolean {
         val feedId = "${feed.labels.title ?: ""}-${feed.time}-${feed.serverId ?: ""}"
-        return readFeedIds.contains(feedId)
+        val isRead = readFeedIds.contains(feedId)
+        return isRead
     }
     
     /**
@@ -530,7 +544,8 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     private fun updateFilteredFeeds() {
         val feedsWithReadStatus = allFeeds
             .map { feed ->
-                feed.copy(isRead = isFeedRead(feed))
+                val isRead = isFeedRead(feed)
+                feed.copy(isRead = isRead)
             }
             .sortedWith(compareByDescending<Feed> {
                 parseTimeToLong(it.time)
