@@ -60,6 +60,18 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
     // 标记是否需要刷新主页Feed列表
     var shouldRefreshHome by mutableStateOf(false)
         private set
+    
+    // 更新检查状态
+    var updateCheckStatus by mutableStateOf<UpdateCheckStatus>(UpdateCheckStatus.Idle)
+        private set
+    
+    // 更新检查状态枚举
+    sealed class UpdateCheckStatus {
+        object Idle : UpdateCheckStatus()
+        object Checking : UpdateCheckStatus()
+        object NoUpdate : UpdateCheckStatus()
+        class HasUpdate(val release: GithubRelease) : UpdateCheckStatus()
+    }
 
     fun selectFeed(feed: Feed) {
         selectedFeed = feed
@@ -239,13 +251,17 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun checkForUpdate() {
         viewModelScope.launch {
+            updateCheckStatus = UpdateCheckStatus.Checking
             val settingsDataStore = SettingsDataStore(getApplication())
             val branch = settingsDataStore.updateBranch.first()
-            updateInfo = feedRepository.checkForUpdate(branch)
-            if (updateInfo != null) {
-                Log.d("SharedViewModel", "发现新版本: ${updateInfo?.tagName}")
+            val latestRelease = feedRepository.checkForUpdate(branch)
+            if (latestRelease != null) {
+                Log.d("SharedViewModel", "发现新版本: ${latestRelease.tagName}")
+                updateInfo = latestRelease
+                updateCheckStatus = UpdateCheckStatus.HasUpdate(latestRelease)
             } else {
                 Log.d("SharedViewModel", "未发现新版本")
+                updateCheckStatus = UpdateCheckStatus.NoUpdate
             }
         }
     }
@@ -255,5 +271,13 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun clearUpdateInfo() {
         updateInfo = null
+        updateCheckStatus = UpdateCheckStatus.Idle
+    }
+    
+    /**
+     * 重置更新检查状态
+     */
+    fun resetUpdateCheckStatus() {
+        updateCheckStatus = UpdateCheckStatus.Idle
     }
 }
