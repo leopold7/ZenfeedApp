@@ -525,9 +525,23 @@ class FeedRepository private constructor(private val context: Context) {
                 val currentTimestamp = currentVersion.split("dev.")[1].toLongOrNull() ?: 0
                 return latestTimestamp > currentTimestamp
             }
+
+            // 只有当 dev 版本的核心版本号大于当前稳定版本时，才认为是新版本
+            // 例如：1.5.0.dev.xxx 不应该被认为是 1.5.0 的新版本
+            // 但 1.6.0.dev.xxx 应该被认为是 1.5.0 的新版本
+            if (latestVersion.contains("dev") && !currentVersion.contains("dev")) {
+                // dev 版本的核心版本号必须大于当前稳定版本
+                return false
+            }
             
-            // 如果一个是 dev 版本，另一个不是，dev 版本优先
-            return latestVersion.contains("dev") && !currentVersion.contains("dev")
+            // 如果当前版本是 dev 版本，而最新版本是稳定版本
+            // 只有当稳定版本的核心版本号大于当前 dev 版本时，才认为是新版本
+            if (!latestVersion.contains("dev") && currentVersion.contains("dev")) {
+                // 稳定版本的核心版本号必须大于当前 dev 版本
+                return false
+            }
+            
+            return false
         } else {
             // 对于 master 分支，只比较稳定版本号
             val latestParts = latestVersion.split(".").map { it.toIntOrNull() ?: 0 }
