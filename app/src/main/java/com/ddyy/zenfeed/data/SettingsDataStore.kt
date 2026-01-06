@@ -35,6 +35,7 @@ class SettingsDataStore(private val context: Context) {
         private val PROXY_PASSWORD_KEY = stringPreferencesKey("proxy_password")
         private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         private val CHECK_UPDATE_ON_START_KEY = booleanPreferencesKey("check_update_on_start")
+        private val UPDATE_BRANCH_KEY = stringPreferencesKey("update_branch")
         private val HOME_GROUPING_MODE_KEY = stringPreferencesKey("home_grouping_mode")
         private val CATEGORY_FILTER_CONFIGS_KEY = stringPreferencesKey("category_filter_configs")
         private val IMAGE_CACHE_ENABLED_KEY = booleanPreferencesKey("image_cache_enabled")
@@ -64,6 +65,7 @@ class SettingsDataStore(private val context: Context) {
         // 默认的主题设置
         const val DEFAULT_THEME_MODE = "system" // 可以是 "light", "dark", "system"
         const val DEFAULT_CHECK_UPDATE_ON_START = true
+        const val DEFAULT_UPDATE_BRANCH = "master" // 可以是 "master", "dev"
         
         // 默认的首页分组模式设置
         const val DEFAULT_HOME_GROUPING_MODE = "category" // 可以是 "category", "source", "category,source", "none"
@@ -167,6 +169,14 @@ class SettingsDataStore(private val context: Context) {
     val checkUpdateOnStart: Flow<Boolean> = context.settingsDataStore.data
         .map { preferences ->
             preferences[CHECK_UPDATE_ON_START_KEY] ?: DEFAULT_CHECK_UPDATE_ON_START
+        }
+    
+    /**
+     * 获取更新分支设置的Flow
+     */
+    val updateBranch: Flow<String> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[UPDATE_BRANCH_KEY] ?: DEFAULT_UPDATE_BRANCH
         }
     
     /**
@@ -325,6 +335,16 @@ class SettingsDataStore(private val context: Context) {
     }
     
     /**
+     * 保存更新分支设置
+     * @param branch 更新分支，可以是 "master", "dev"
+     */
+    suspend fun saveUpdateBranch(branch: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[UPDATE_BRANCH_KEY] = branch
+        }
+    }
+    
+    /**
      * 保存AI API地址
      * @param url AI API地址
      */
@@ -479,6 +499,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[PROXY_PASSWORD_KEY] = DEFAULT_PROXY_PASSWORD
             preferences[THEME_MODE_KEY] = DEFAULT_THEME_MODE
             preferences[CHECK_UPDATE_ON_START_KEY] = DEFAULT_CHECK_UPDATE_ON_START
+            preferences[UPDATE_BRANCH_KEY] = DEFAULT_UPDATE_BRANCH
             preferences[HOME_GROUPING_MODE_KEY] = DEFAULT_HOME_GROUPING_MODE
             preferences[CATEGORY_FILTER_CONFIGS_KEY] = ""
             preferences[IMAGE_CACHE_ENABLED_KEY] = DEFAULT_IMAGE_CACHE_ENABLED

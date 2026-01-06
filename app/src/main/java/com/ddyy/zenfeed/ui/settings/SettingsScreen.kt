@@ -190,9 +190,14 @@ fun SettingsScreen(
             // 更新设置卡片
             UpdateSettingsCard(
                 checkUpdateOnStart = uiState.checkUpdateOnStart,
+                updateBranch = uiState.updateBranch,
                 onCheckUpdateOnStartChange = {
                     settingsViewModel.updateCheckUpdateOnStart(it)
                     settingsViewModel.saveCheckUpdateOnStart()
+                },
+                onUpdateBranchChange = { branch ->
+                    settingsViewModel.updateUpdateBranch(branch)
+                    settingsViewModel.saveUpdateBranch()
                 },
                 isLoading = uiState.isLoading
             )
@@ -631,10 +636,13 @@ private fun ProxySettingCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UpdateSettingsCard(
     checkUpdateOnStart: Boolean,
+    updateBranch: String,
     onCheckUpdateOnStartChange: (Boolean) -> Unit,
+    onUpdateBranchChange: (String) -> Unit,
     isLoading: Boolean
 ) {
     Card(
@@ -672,6 +680,51 @@ private fun UpdateSettingsCard(
                     onCheckedChange = onCheckUpdateOnStartChange,
                     enabled = !isLoading
                 )
+            }
+
+            // 分支选择器
+            Column {
+                Text(
+                    text = "更新分支",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                // 分支选项
+                val branchOptions = listOf("master", "dev")
+                var expanded by remember { mutableStateOf(false) }
+                
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded && !isLoading },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextField(
+                        value = updateBranch,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("选择分支") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        branchOptions.forEach { branch ->
+                            DropdownMenuItem(
+                                text = { Text(branch) },
+                                onClick = {
+                                    onUpdateBranchChange(branch)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -1112,11 +1165,13 @@ private fun AiSettingsCard(
 @Composable
 fun UpdateSettingsCardPreview() {
     ZenfeedTheme {
-        UpdateSettingsCard(
-            checkUpdateOnStart = true,
-            onCheckUpdateOnStartChange = {},
-            isLoading = false
-        )
-    }
+            UpdateSettingsCard(
+                checkUpdateOnStart = true,
+                updateBranch = "master",
+                onCheckUpdateOnStartChange = {},
+                onUpdateBranchChange = {},
+                isLoading = false
+            )
+        }
     
 }

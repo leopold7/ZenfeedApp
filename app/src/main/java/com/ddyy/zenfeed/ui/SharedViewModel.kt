@@ -11,8 +11,10 @@ import androidx.lifecycle.viewModelScope
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.FeedRepository
 import com.ddyy.zenfeed.data.Labels
+import com.ddyy.zenfeed.data.SettingsDataStore
 import com.ddyy.zenfeed.data.model.GithubRelease
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class SharedViewModel(application: Application) : AndroidViewModel(application) {
     private val feedRepository = FeedRepository.getInstance(application)
@@ -237,7 +239,9 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun checkForUpdate() {
         viewModelScope.launch {
-            updateInfo = feedRepository.checkForUpdate()
+            val settingsDataStore = SettingsDataStore(getApplication())
+            val branch = settingsDataStore.updateBranch.first()
+            updateInfo = feedRepository.checkForUpdate(branch)
             if (updateInfo != null) {
                 Log.d("SharedViewModel", "发现新版本: ${updateInfo?.tagName}")
             } else {

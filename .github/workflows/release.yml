@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master # 当向 master 分支推送代码时触发
+      - dev    # 当向 dev 分支推送代码时触发
 
 jobs:
   build-and-release:
@@ -42,28 +43,44 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Read version from gradle.properties
-        # 从 gradle.properties 文件中读取版本名称，并将其设置为后续步骤可用的环境变量
-        id: version_reader
+      - name: Determine branch and version information
+        id: branch_info
         run: |
+          # 获取当前分支
+          current_branch=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+          echo "current_branch=$current_branch" >> $GITHUB_OUTPUT
+          
+          # 读取版本名称
           versionName=$(grep 'appVersionName' gradle.properties | cut -d'=' -f2)
-          echo "versionName=$versionName" >> $GITHUB_OUTPUT
+          echo "base_version=$versionName" >> $GITHUB_OUTPUT
+          
+          # 生成时间戳
+          timestamp=$(date +'%Y%m%d%H%M%S')
+          echo "timestamp=$timestamp" >> $GITHUB_OUTPUT
+          
+          # 为dev分支生成特殊版本号
+          if [ "$current_branch" = "dev" ]; then
+            dev_version="${versionName}.dev.${timestamp}"
+            echo "final_version=$dev_version" >> $GITHUB_OUTPUT
+            echo "is_dev=true" >> $GITHUB_OUTPUT
+          else
+            echo "final_version=$versionName" >> $GITHUB_OUTPUT
+            echo "is_dev=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check if tag exists
-        # 检查与版本对应的 Git 标签是否已存在
         id: check_tag
         run: |
-          if git rev-parse "v${{ steps.version_reader.outputs.versionName }}" >/dev/null 2>&1; then
-            echo "Tag v${{ steps.version_reader.outputs.versionName }} already exists. No new release needed."
+          if git rev-parse "v${{ steps.branch_info.outputs.final_version }}" >/dev/null 2>&1; then
+            echo "Tag v${{ steps.branch_info.outputs.final_version }} already exists. No new release needed."
             echo "skip=true" >> $GITHUB_OUTPUT
           else
-            echo "Tag v${{ steps.version_reader.outputs.versionName }} does not exist. Proceeding with release."
+            echo "Tag v${{ steps.branch_info.outputs.final_version }} does not exist. Proceeding with release."
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Build with Gradle
         # 仅在标签不存在时执行
-        # versionCode 会在构建脚本中自动计算，无需传入
         if: steps.check_tag.outputs.skip == 'false'
         run: ./gradlew assembleRelease
 
@@ -86,6 +103,19 @@ jobs:
           echo "$changelog_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Delete old dev releases
+        # 仅在dev分支且标签不存在时执行
+        if: steps.check_tag.outputs.skip == 'false' && steps.branch_info.outputs.is_dev == 'true'
+        run: |
+          # 获取所有发布版本
+          releases=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases)
+          
+          # 过滤出dev版本并删除
+          echo "$releases" | jq -r '.[] | select(.tag_name | test("dev")) | .id' | while read -r release_id; do
+            echo "Deleting old dev release: $release_id"
+            curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases/$release_id
+          done
+
       - name: Create Git Tag and Release
         # 仅在标签不存在时执行
         if: steps.check_tag.outputs.skip == 'false'
@@ -95,6 +125,8 @@ jobs:
           files: app/build/outputs/apk/release/app-release.apk
           # 使用我们生成的更新日志作为 Release 的 body
           body: ${{ steps.changelog.outputs.changelog }}
-          # 使用我们读取的版本号来创建 Release 和 Tag
-          tag_name: "v${{ steps.version_reader.outputs.versionName }}"
-          name: "Release v${{ steps.version_reader.outputs.versionName }}"
+          # 使用我们生成的版本号来创建 Release 和 Tag
+          tag_name: "v${{ steps.branch_info.outputs.final_version }}"
+          name: "Release v${{ steps.branch_info.outputs.final_version }}"
+          # 为dev分支设置为预发布
+          prerelease: ${{ steps.branch_info.outputs.is_dev == 'true' }}

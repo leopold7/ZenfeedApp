@@ -27,6 +27,7 @@ data class SettingsUiState(
     val proxyPassword: String = "",
     val themeMode: String = "system",
     val checkUpdateOnStart: Boolean = true,
+    val updateBranch: String = SettingsDataStore.DEFAULT_UPDATE_BRANCH,
     val homeGroupingMode: String = "category",
     val categoryFilterConfigs: List<CategoryFilterConfig> = emptyList(),
     val imageCacheEnabled: Boolean = true,
@@ -60,6 +61,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentInputProxyPassword = ""
     private var currentThemeMode = "system"
     private var currentCheckUpdateOnStart = true
+    private var currentUpdateBranch = SettingsDataStore.DEFAULT_UPDATE_BRANCH
     private var currentHomeGroupingMode = "category"
     private var currentCategoryFilterConfigs = mutableListOf<CategoryFilterConfig>()
     private var currentImageCacheEnabled = true
@@ -94,6 +96,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val proxyPassword = settingsDataStore.proxyPassword.first()
                 val themeMode = settingsDataStore.themeMode.first()
                 val checkUpdateOnStart = settingsDataStore.checkUpdateOnStart.first()
+                val updateBranch = settingsDataStore.updateBranch.first()
                 val homeGroupingMode = settingsDataStore.homeGroupingMode.first()
                 val categoryFilterConfigs = settingsDataStore.categoryFilterConfigs.first()
                 val imageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
@@ -114,8 +117,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     proxyUsername = proxyUsername,
                     proxyPassword = proxyPassword,
                     themeMode = themeMode,
-                    checkUpdateOnStart = checkUpdateOnStart,
-                    homeGroupingMode = homeGroupingMode,
+                        checkUpdateOnStart = checkUpdateOnStart,
+                        updateBranch = updateBranch,
+                        homeGroupingMode = homeGroupingMode,
                     categoryFilterConfigs = categoryFilterConfigs,
                     imageCacheEnabled = imageCacheEnabled,
                     serverConfigs = serverConfigs,
@@ -243,6 +247,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun updateCheckUpdateOnStart(enabled: Boolean) {
         currentCheckUpdateOnStart = enabled
+    }
+    
+    /**
+     * 更新更新分支设置
+     * @param branch 更新分支，可以是 "master", "dev"
+     */
+    fun updateUpdateBranch(branch: String) {
+        currentUpdateBranch = branch
     }
     
     /**
@@ -532,6 +544,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     
     /**
+     * 保存更新分支设置
+     */
+    fun saveUpdateBranch() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            
+            try {
+                settingsDataStore.saveUpdateBranch(currentUpdateBranch)
+                showMessage("设置已保存")
+                
+            } catch (e: Exception) {
+                showMessage("保存失败：${e.message}")
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
+    }
+    
+    /**
      * 保存首页分组模式
      */
     fun saveHomeGroupingMode() {
@@ -667,8 +698,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 currentInputProxyUsername = SettingsDataStore.DEFAULT_PROXY_USERNAME
                 currentInputProxyPassword = SettingsDataStore.DEFAULT_PROXY_PASSWORD
                 currentThemeMode = SettingsDataStore.DEFAULT_THEME_MODE
-                currentCheckUpdateOnStart = SettingsDataStore.DEFAULT_CHECK_UPDATE_ON_START
-                currentHomeGroupingMode = SettingsDataStore.DEFAULT_HOME_GROUPING_MODE
+            currentCheckUpdateOnStart = SettingsDataStore.DEFAULT_CHECK_UPDATE_ON_START
+            currentUpdateBranch = SettingsDataStore.DEFAULT_UPDATE_BRANCH
+            currentHomeGroupingMode = SettingsDataStore.DEFAULT_HOME_GROUPING_MODE
             currentCategoryFilterConfigs = mutableListOf()
             currentImageCacheEnabled = SettingsDataStore.DEFAULT_IMAGE_CACHE_ENABLED
             currentAiApiUrl = SettingsDataStore.DEFAULT_AI_API_URL
