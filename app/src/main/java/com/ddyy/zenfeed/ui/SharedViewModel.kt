@@ -70,7 +70,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
         object Idle : UpdateCheckStatus()
         object Checking : UpdateCheckStatus()
         object NoUpdate : UpdateCheckStatus()
-        class HasUpdate(val release: GithubRelease) : UpdateCheckStatus()
+        class HasUpdate(val release: GithubRelease, val isManualCheck: Boolean = false) : UpdateCheckStatus()
     }
 
     fun selectFeed(feed: Feed) {
@@ -249,7 +249,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
     /**
      * 检查应用更新
      */
-    fun checkForUpdate() {
+    fun checkForUpdate(isManualCheck: Boolean = false) {
         viewModelScope.launch {
             updateCheckStatus = UpdateCheckStatus.Checking
             val settingsDataStore = SettingsDataStore(getApplication())
@@ -258,7 +258,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application) 
             if (latestRelease != null) {
                 Log.d("SharedViewModel", "发现新版本: ${latestRelease.tagName}")
                 updateInfo = latestRelease
-                updateCheckStatus = UpdateCheckStatus.HasUpdate(latestRelease)
+                updateCheckStatus = UpdateCheckStatus.HasUpdate(latestRelease, isManualCheck)
             } else {
                 Log.d("SharedViewModel", "未发现新版本")
                 updateCheckStatus = UpdateCheckStatus.NoUpdate

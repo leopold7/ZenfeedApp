@@ -95,6 +95,9 @@ fun SettingsScreen(
     val updateCheckStatus = sharedViewModel.updateCheckStatus
     val snackbarHostState = remember { SnackbarHostState() }
     
+    // 记录是否是手动检查更新
+    var isManualUpdateCheck by remember { mutableStateOf(false) }
+    
     // 当有消息需要显示时，显示Snackbar
     LaunchedEffect(uiState.message) {
         if (uiState.message.isNotEmpty()) {
@@ -107,7 +110,15 @@ fun SettingsScreen(
     LaunchedEffect(updateCheckStatus) {
         when (updateCheckStatus) {
             is SharedViewModel.UpdateCheckStatus.NoUpdate -> {
-                Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show()
+                if (isManualUpdateCheck) {
+                    Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show()
+                    isManualUpdateCheck = false
+                }
+            }
+            is SharedViewModel.UpdateCheckStatus.HasUpdate -> {
+                if (isManualUpdateCheck) {
+                    isManualUpdateCheck = false
+                }
             }
             else -> {}
         }
@@ -218,10 +229,12 @@ fun SettingsScreen(
                     settingsViewModel.saveUpdateBranch()
                 },
                 onCheckUpdate = {
+                        // 标记为手动检查
+                        isManualUpdateCheck = true
                         // 重置更新检查状态
                         sharedViewModel.resetUpdateCheckStatus()
-                        // 使用传入的 sharedViewModel 实例
-                        sharedViewModel.checkForUpdate()
+                        // 使用传入的 sharedViewModel 实例，传入 isManualCheck = true
+                        sharedViewModel.checkForUpdate(isManualCheck = true)
                         // 显示正在检查更新的提示
                         Toast.makeText(context, "正在检查更新...", Toast.LENGTH_SHORT).show()
                     },
