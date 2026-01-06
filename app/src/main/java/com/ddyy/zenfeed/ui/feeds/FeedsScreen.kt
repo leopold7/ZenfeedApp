@@ -866,7 +866,12 @@ fun FeedsScreenContent(
                                 }
 
                                 // 滚动到指定文章
-                                val targetFeeds = categorizedFeeds[targetCategory] ?: emptyList()
+                                // 根据目标分类使用正确的列表（"全部"页面使用过滤后的列表，其他页面使用完整列表）
+                                val targetFeeds = if (targetCategory.isEmpty()) {
+                                    allFeedsFiltered
+                                } else {
+                                    categorizedFeeds[targetCategory] ?: emptyList()
+                                }
                                 val targetIndex =
                                     sharedViewModel.getLastViewedFeedIndexInCategory(targetFeeds)
 
