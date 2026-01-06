@@ -109,6 +109,9 @@ class FeedRepository private constructor(private val context: Context) {
             // 存储所有Feed的列表
             val allFeeds = mutableListOf<Feed>()
             
+            // 标记是否成功获取到任何数据
+            var hasSuccess = false
+            
             // 1. 获取主服务器数据
             try {
                 val mainApiService = ApiClient.getApiService(context)
@@ -120,6 +123,7 @@ class FeedRepository private constructor(private val context: Context) {
                 // 为主服务器的Feed添加空的serverId标识
                 val mainFeeds = mainResponse.feeds.map { it.copy(serverId = "") }
                 allFeeds.addAll(mainFeeds)
+                hasSuccess = true
                 Log.d("FeedRepository", "已获取主服务器 Feed 数据，共 ${mainFeeds.size} 条")
             } catch (e: Exception) {
                 Log.e("FeedRepository", "获取主服务器数据失败，继续处理其他服务器", e)
@@ -138,10 +142,16 @@ class FeedRepository private constructor(private val context: Context) {
                     // 为该服务器的Feed添加serverId标识（使用服务器id而不是名称）
                     val serverFeeds = serverResponse.feeds.map { it.copy(serverId = serverConfig.id) }
                     allFeeds.addAll(serverFeeds)
+                    hasSuccess = true
                     Log.d("FeedRepository", "已获取服务器 ${serverConfig.name} 的 Feed 数据，共 ${serverFeeds.size} 条")
                 } catch (e: Exception) {
                     Log.e("FeedRepository", "获取服务器 ${serverConfig.name} 数据失败，继续处理其他服务器", e)
                 }
+            }
+            
+            // 如果没有成功获取到任何数据，抛出异常
+            if (!hasSuccess) {
+                throw Exception("所有服务器请求均失败")
             }
             
             // 按时间倒序排序所有Feed
