@@ -116,6 +116,25 @@ jobs:
             curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases/$release_id
           done
 
+      - name: Delete old dev tags
+        # 仅在dev分支且标签不存在时执行
+        if: steps.check_tag.outputs.skip == 'false' && steps.branch_info.outputs.is_dev == 'true'
+        run: |
+          # 列出所有包含 "dev" 的标签
+          dev_tags=$(git tag -l "*dev*")
+          
+          # 遍历并删除这些标签
+          if [ -n "$dev_tags" ]; then
+            echo "Deleting old dev tags:"
+            echo "$dev_tags" | while read -r tag; do
+              echo "Deleting tag: $tag"
+              git tag -d "$tag"
+              git push origin --delete "$tag"
+            done
+          else
+            echo "No dev tags found to delete"
+          fi
+
       - name: Create Git Tag and Release
         # 仅在标签不存在时执行
         if: steps.check_tag.outputs.skip == 'false'
