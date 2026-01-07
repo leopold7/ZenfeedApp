@@ -104,13 +104,20 @@ jobs:
         id: changelog
         run: |
           # 查找上一个版本的标签
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ "${{ steps.branch_info.outputs.is_dev }}" = "true" ]; then
+            # dev分支：查找最新的稳定版本标签（不以 dev 结尾）
+            latest_tag=$(git tag -l "v*" --sort=-version:refname | grep -v "dev" | head -n 1)
+          else
+            # 稳定分支：查找最新的标签
+            latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          fi
+          
           if [ -z "$latest_tag" ]; then
             # 如果没有上一个标签，就从第一次提交开始计算
-            changelog_content=$(git log --pretty=format:"* %h %s" | sed -E 's/\* [0-9a-f]+ (feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: //')
+            changelog_content=$(git log --pretty=format:"* %h %s")
           else
             # 如果有上一个标签，就计算两个标签之间的提交
-            changelog_content=$(git log ${latest_tag}..HEAD --pretty=format:"* %h %s" | sed -E 's/\* [0-9a-f]+ (feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: //')
+            changelog_content=$(git log ${latest_tag}..HEAD --pretty=format:"* %h %s")
           fi
           # 添加 Full Changelog 链接
           if [ -n "$latest_tag" ]; then
