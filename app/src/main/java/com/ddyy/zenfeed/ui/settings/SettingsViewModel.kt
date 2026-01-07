@@ -37,6 +37,7 @@ data class SettingsUiState(
     val aiPrompt: String = "",
     val serverConfigs: List<ServerConfig> = emptyList(),
     val markPodcastAsRead: Boolean = true,
+    val titleFilterKeywords: String = "",
     val isLoading: Boolean = false,
     val message: String = "")
 
@@ -70,6 +71,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentAiModelName = ""
     private var currentAiPrompt = ""
     private var currentMarkPodcastAsRead = true
+    private var currentTitleFilterKeywords = ""
 
     init {
         // 初始化时加载当前设置
@@ -106,6 +108,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val aiModelName = settingsDataStore.aiModelName.first()
                 val aiPrompt = settingsDataStore.aiPrompt.first()
                 val markPodcastAsRead = settingsDataStore.markPodcastAsRead.first()
+                val titleFilterKeywords = settingsDataStore.titleFilterKeywords.first()
 
                 _uiState.value = _uiState.value.copy(
                     apiUrl = apiUrl,
@@ -128,6 +131,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     aiModelName = aiModelName,
                     aiPrompt = aiPrompt,
                     markPodcastAsRead = markPodcastAsRead,
+                    titleFilterKeywords = titleFilterKeywords,
                     isLoading = false
                 )
 
@@ -323,6 +327,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun updateMarkPodcastAsRead(enabled: Boolean) {
         currentMarkPodcastAsRead = enabled
+    }
+    
+    /**
+     * 更新标题过滤关键词
+     * @param keywords 标题过滤关键词
+     */
+    fun updateTitleFilterKeywords(keywords: String) {
+        currentTitleFilterKeywords = keywords
+    }
+    
+    /**
+     * 保存标题过滤设置
+     */
+    fun saveTitleFilterSettings() {
+        viewModelScope.launch {
+            try {
+                settingsDataStore.saveTitleFilterKeywords(currentTitleFilterKeywords)
+                _uiState.value = _uiState.value.copy(titleFilterKeywords = currentTitleFilterKeywords)
+            } catch (e: Exception) {
+                showMessage("保存标题过滤设置失败：${e.message}")
+            }
+        }
     }
 
     /**

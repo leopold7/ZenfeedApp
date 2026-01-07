@@ -74,6 +74,7 @@ import com.ddyy.zenfeed.ui.SharedViewModel
 import com.ddyy.zenfeed.ui.theme.ZenfeedTheme
 import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
 import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
+import com.ddyy.zenfeed.extension.navigateToFeedFilterSettings
 import android.widget.Toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -177,6 +178,7 @@ fun SettingsScreen(
                 homeGroupingMode = uiState.homeGroupingMode,
                 imageCacheEnabled = uiState.imageCacheEnabled,
                 markPodcastAsRead = uiState.markPodcastAsRead,
+                titleFilterKeywords = uiState.titleFilterKeywords,
                 isLoading = uiState.isLoading,
                 navController = navController,
                 onHomeGroupingModeChange = {
@@ -838,6 +840,7 @@ private fun PersonalizationSettingsCard(
     homeGroupingMode: String,
     imageCacheEnabled: Boolean,
     markPodcastAsRead: Boolean,
+    titleFilterKeywords: String,
     isLoading: Boolean,
     navController: NavController,
     onHomeGroupingModeChange: (String) -> Unit,
@@ -993,6 +996,34 @@ private fun PersonalizationSettingsCard(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+                }
+            }
+
+            // 文章过滤选项
+            Column {
+                Text(
+                    text = "文章过滤",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                val currentKeywords = if (titleFilterKeywords.isNotBlank()) {
+                    "已设置文章过滤"
+                } else {
+                    "未设置文章过滤"
+                }
+
+                OutlinedButton(
+                    onClick = { navController.navigateToFeedFilterSettings() },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = currentKeywords,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
 
