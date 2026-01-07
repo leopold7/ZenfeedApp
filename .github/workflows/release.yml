@@ -107,10 +107,14 @@ jobs:
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -z "$latest_tag" ]; then
             # 如果没有上一个标签，就从第一次提交开始计算
-            changelog_content=$(git log --pretty=format:"- %s" | sed -E 's/- (feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: //')
+            changelog_content=$(git log --pretty=format:"* %h %s" | sed -E 's/\* [0-9a-f]+ (feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: //')
           else
             # 如果有上一个标签，就计算两个标签之间的提交
-            changelog_content=$(git log ${latest_tag}..HEAD --pretty=format:"- %s" | sed -E 's/- (feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: //')
+            changelog_content=$(git log ${latest_tag}..HEAD --pretty=format:"* %h %s" | sed -E 's/\* [0-9a-f]+ (feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: //')
+          fi
+          # 添加 Full Changelog 链接
+          if [ -n "$latest_tag" ]; then
+            changelog_content="${changelog_content}"$'\n'$'\n'"**Full Changelog**: https://github.com/${{ github.repository }}/compare/${latest_tag}...v${{ steps.branch_info.outputs.final_version }}"
           fi
           # 将处理后的内容写入 GITHUB_OUTPUT
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
