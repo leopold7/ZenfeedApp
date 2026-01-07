@@ -70,6 +70,9 @@ class FeedRepository private constructor(private val context: Context) {
      * @return Feed响应结果
      */
     suspend fun getFeeds(useCache: Boolean = true, hours: Int = 24, query: String = "", threshold: Float? = null, limit: Int = 500): Result<FeedResponse> {
+        // 记录失败的服务器列表
+        val failedServers = mutableListOf<String>()
+        
         return try {
             // 如果允许使用缓存且缓存有效，则返回缓存数据
             if (useCache && isCacheValid()) {
@@ -109,8 +112,8 @@ class FeedRepository private constructor(private val context: Context) {
             // 存储所有Feed的列表
             val allFeeds = mutableListOf<Feed>()
             
-            // 标记是否成功获取到任何数据
-            var hasSuccess = false
+            // 提前获取缓存数据，用于在服务器失败时补充该服务器的过往文章
+            val cachedFeeds = getCachedFeeds()
             
             // 1. 获取主服务器数据
             try {
@@ -123,10 +126,15 @@ class FeedRepository private constructor(private val context: Context) {
                 // 为主服务器的Feed添加空的serverId标识
                 val mainFeeds = mainResponse.feeds.map { it.copy(serverId = "") }
                 allFeeds.addAll(mainFeeds)
-                hasSuccess = true
                 Log.d("FeedRepository", "已获取主服务器 Feed 数据，共 ${mainFeeds.size} 条")
             } catch (e: Exception) {
-                Log.e("FeedRepository", "获取主服务器数据失败，继续处理其他服务器", e)
+                failedServers.add("主服务器")
+                Log.e("FeedRepository", "获取主服务器数据失败，从缓存中补充主服务器的过往文章", e)
+                // 从缓存中筛选主服务器的文章（serverId为空）
+                cachedFeeds?.filter { it.serverId.isNullOrEmpty() }?.let { mainCachedFeeds ->
+                    allFeeds.addAll(mainCachedFeeds)
+                    Log.d("FeedRepository", "从缓存中补充主服务器文章，共 ${mainCachedFeeds.size} 条")
+                }
             }
             
             // 2. 遍历获取所有配置的服务器数据
@@ -142,29 +150,37 @@ class FeedRepository private constructor(private val context: Context) {
                     // 为该服务器的Feed添加serverId标识（使用服务器id而不是名称）
                     val serverFeeds = serverResponse.feeds.map { it.copy(serverId = serverConfig.id) }
                     allFeeds.addAll(serverFeeds)
-                    hasSuccess = true
                     Log.d("FeedRepository", "已获取服务器 ${serverConfig.name} 的 Feed 数据，共 ${serverFeeds.size} 条")
                 } catch (e: Exception) {
-                    Log.e("FeedRepository", "获取服务器 ${serverConfig.name} 数据失败，继续处理其他服务器", e)
+                    failedServers.add(serverConfig.name)
+                    Log.e("FeedRepository", "获取服务器 ${serverConfig.name} 数据失败，从缓存中补充该服务器的过往文章", e)
+                    // 从缓存中筛选该服务器的文章（serverId为服务器id）
+                    cachedFeeds?.filter { it.serverId == serverConfig.id }?.let { serverCachedFeeds ->
+                        allFeeds.addAll(serverCachedFeeds)
+                        Log.d("FeedRepository", "从缓存中补充服务器 ${serverConfig.name} 的文章，共 ${serverCachedFeeds.size} 条")
+                    }
                 }
-            }
-            
-            // 如果没有成功获取到任何数据，抛出异常
-            if (!hasSuccess) {
-                throw Exception("所有服务器请求均失败")
             }
             
             // 按时间倒序排序所有Feed
             val sortedFeeds = allFeeds.sortedByDescending { it.time }
             
-            // 缓存新获取的数据
+            // 缓存新获取的数据（只在成功获取到数据时才缓存）
             cacheFeeds(sortedFeeds)
             Log.d("FeedRepository", "从网络获取并缓存 Feed 数据，共 ${sortedFeeds.size} 条")
+
+            // 如果有部分服务器失败，添加错误信息
+            val errorInfo = if (failedServers.isNotEmpty()) {
+                "以下服务器获取失败：${failedServers.joinToString(", ")}"
+            } else {
+                null
+            }
 
             Result.success(
                 FeedResponse(
                     feeds = sortedFeeds,
-                    count = sortedFeeds.size
+                    count = sortedFeeds.size,
+                    error = errorInfo
                 )
             )
         } catch (e: Exception) {
@@ -196,17 +212,27 @@ class FeedRepository private constructor(private val context: Context) {
             if (cachedFeeds != null) {
                 Log.d("FeedRepository", "网络请求失败，返回缓存数据")
                 // 创建包含缓存数据和错误信息的复合结果
+                val errorInfo = if (failedServers.isNotEmpty()) {
+                    "以下服务器获取失败：${failedServers.joinToString(", ")}"
+                } else {
+                    errorMessage
+                }
                 return Result.success(
                     FeedResponse(
                         feeds = cachedFeeds,
                         count = cachedFeeds.size,
-                        error = errorMessage
+                        error = errorInfo
                     )
                 )
             }
 
             // 返回包含详细错误信息的失败结果
-            Result.failure(Exception(errorMessage, e))
+            val errorInfo = if (failedServers.isNotEmpty()) {
+                "以下服务器获取失败：${failedServers.joinToString(", ")}"
+            } else {
+                errorMessage
+            }
+            Result.failure(Exception(errorInfo, e))
         }
     }
 
