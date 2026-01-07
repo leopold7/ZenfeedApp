@@ -14,6 +14,7 @@ import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.FeedRepository
 import com.ddyy.zenfeed.data.ServerConfig
 import com.ddyy.zenfeed.data.SettingsDataStore
+import com.ddyy.zenfeed.extension.filterByTitleKeywords
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -114,6 +115,10 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     var serverConfigs: List<ServerConfig> by mutableStateOf(emptyList())
         private set
     
+    // 标题过滤关键词
+    var titleFilterKeywords: String by mutableStateOf("")
+        private set
+    
     // 监听分组模式变化，更新Feed列表
     private val _groupingModeFlow = MutableStateFlow(groupingMode)
     
@@ -182,6 +187,17 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+        
+        // 持续监听标题过滤关键词变化
+        viewModelScope.launch {
+            settingsDataStore.titleFilterKeywords.collect {
+                if (titleFilterKeywords != it) {
+                    titleFilterKeywords = it
+                    updateFilteredFeeds()
+                    Log.d("FeedsViewModel", "标题过滤关键词已更新: $it")
+                }
+            }
+        }
 
         // 加载初始数据和设置
         viewModelScope.launch {
@@ -190,17 +206,20 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             val initialGroupingMode = settingsDataStore.homeGroupingMode.first()
             val initialImageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
             val initialServerConfigs = settingsDataStore.serverConfigs.first()
+            val initialTitleFilterKeywords = settingsDataStore.titleFilterKeywords.first()
 
             categoryFilterConfigs = initialConfigs
             groupingMode = initialGroupingMode
             imageCacheEnabled = initialImageCacheEnabled
             serverConfigs = initialServerConfigs
+            titleFilterKeywords = initialTitleFilterKeywords
             _groupingModeFlow.value = initialGroupingMode
 
             Log.d("FeedsViewModel", "初始分类过滤配置已加载: ${initialConfigs.size} 个配置")
             Log.d("FeedsViewModel", "初始分组模式已加载: $initialGroupingMode")
             Log.d("FeedsViewModel", "初始图片缓存设置已加载: $initialImageCacheEnabled")
             Log.d("FeedsViewModel", "初始服务器配置已加载: ${initialServerConfigs.size} 个服务器")
+            Log.d("FeedsViewModel", "初始标题过滤关键词已加载: $initialTitleFilterKeywords")
 
             loadReadFeedIds()
             loadSearchHistory()
@@ -553,6 +572,10 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
                 it.labels.title ?: "未知标题"
             })
         
+        val feedsWithTitleFilter = feedsWithReadStatus.filter { feed ->
+            feed.filterByTitleKeywords(titleFilterKeywords)
+        }
+        
         fun getConfigForCategory(category: String?): CategoryFilterConfig? {
             if (category == null) return null
             return categoryFilterConfigs.find { it.categoryName == category }
@@ -576,7 +599,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         val filteredAllFeeds = feedsWithReadStatus.filter { feed ->
-            shouldIncludeFeedInAll(feed)
+            shouldIncludeFeedInAll(feed) && feed.filterByTitleKeywords(titleFilterKeywords)
         }
         
         // 计算每个分类下的文章数量
@@ -675,7 +698,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         feedsUiState = FeedsUiState.Success(
-            feeds = feedsWithReadStatus,
+            feeds = feedsWithTitleFilter,
             allFeeds = filteredAllFeeds,
             categories = categories
         )

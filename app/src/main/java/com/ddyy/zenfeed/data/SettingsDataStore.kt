@@ -50,6 +50,9 @@ class SettingsDataStore(private val context: Context) {
         private val AI_MODEL_NAME_KEY = stringPreferencesKey("ai_model_name")
         private val AI_PROMPT_KEY = stringPreferencesKey("ai_prompt")
 
+        // 文章标题过滤关键词相关的键
+        private val TITLE_FILTER_KEYWORDS_KEY = stringPreferencesKey("title_filter_keywords")
+
         // 默认的API地址
         const val DEFAULT_API_BASE_URL = "https://zenfeed.xyz/"
         const val DEFAULT_BACKEND_URL = "http://zenfeed:1300"
@@ -87,6 +90,8 @@ class SettingsDataStore(private val context: Context) {
 5. 字数控制在300字以内
 
 请开始总结："""
+
+        const val DEFAULT_TITLE_FILTER_KEYWORDS = ""
     }
     
     /**
@@ -209,6 +214,14 @@ class SettingsDataStore(private val context: Context) {
     val aiPrompt: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
             preferences[AI_PROMPT_KEY] ?: DEFAULT_AI_PROMPT
+        }
+    
+    /**
+     * 获取文章标题过滤关键词的Flow
+     */
+    val titleFilterKeywords: Flow<String> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[TITLE_FILTER_KEYWORDS_KEY] ?: DEFAULT_TITLE_FILTER_KEYWORDS
         }
     
     /**
@@ -399,6 +412,16 @@ class SettingsDataStore(private val context: Context) {
     }
     
     /**
+     * 保存文章标题过滤关键词
+     * @param keywords 标题过滤关键词，多个关键词用逗号分隔
+     */
+    suspend fun saveTitleFilterKeywords(keywords: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[TITLE_FILTER_KEYWORDS_KEY] = keywords
+        }
+    }
+    
+    /**
      * 保存首页分组模式
      * @param mode 分组模式，可以是 "category", "source", "category,source", "none"
      */
@@ -508,6 +531,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[AI_API_KEY_KEY] = DEFAULT_AI_API_KEY
             preferences[AI_MODEL_NAME_KEY] = DEFAULT_AI_MODEL_NAME
             preferences[AI_PROMPT_KEY] = DEFAULT_AI_PROMPT
+            preferences[TITLE_FILTER_KEYWORDS_KEY] = DEFAULT_TITLE_FILTER_KEYWORDS
             preferences.remove(SERVER_CONFIGS_KEY)
         }
     }

@@ -89,6 +89,12 @@ fun NavController.navigateToHomeGroupingSettings(
     navigate("homeGroupingSettings", builder)
 }
 
+fun NavController.navigateToFeedFilterSettings(
+    builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    navigate("feedFilterSettings", builder)
+}
+
 fun NavController.navigateToLogging(
     builder: NavOptionsBuilder.() -> Unit = {}
 ) {
