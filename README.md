@@ -1,3 +1,17 @@
+本项目 fork 于 https://github.com/xusonfan/zenfeedApp ，Vibe Coding 了一些个性化功能。
+
+## 🌈 本项目亮点
+
+*   **多服务器配置**: 支持订阅多个 `zenfeed` 服务器地址，实现 feed 订阅多样化；
+*   **首页分组**: 首页在原有 `按分类` 的基础下，新增了 `按来源分组` ，以及 `先分类后来源` 和 `无分组` 多重选择；
+*   **分组自定义**: 支持对分类和来源设置，支持 `显示/隐藏分组来源` 、 `分组来源排序` 和 `分组来源在(全部)中的显示规则` ；
+*   **feed显示图片**: 支持 feed 是否展示图片，关闭后将不加载图片，专心阅读；
+*   **feed过滤**: 支持 `feed 标题过滤` ，标题匹配的 feeds 直接隐藏；
+*   **听博客默认已读**: 听博客默认按照 `当前分类/来源加载列表` ， 支持 feed `听博客自动已读 feed ` ；
+
+---
+
+
 # Zenfeed
 
 Zenfeed 是一款现代化的 Android RSS 摘要阅读器，旨在提供一个简洁、美观且功能丰富的资讯浏览体验。用户可以通过一个信息流轻松获取来自不同来源的摘要，并能收听摘要附带的播客内容。
@@ -70,7 +84,7 @@ Zenfeed 是一款现代化的 Android RSS 摘要阅读器，旨在提供一个�
 ### 运行步骤
 1.  克隆本仓库:
     ```bash
-    git clone https://github.com/xusonfan/zenfeedApp.git
+    git clone https://github.com/leopold7/zenfeedApp.git
     ```
 2.  使用 Android Studio 打开项目。
 3.  等待 Gradle 同步完成。
