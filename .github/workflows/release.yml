@@ -79,25 +79,6 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Update gradle.properties for dev branch
-        # 仅在dev分支且标签不存在时执行
-        if: steps.check_tag.outputs.skip == 'false' && steps.branch_info.outputs.is_dev == 'true'
-        run: |
-          # 更新 gradle.properties 文件中的 appVersionName 为新的 dev 版本号
-          new_version="${{ steps.branch_info.outputs.final_version }}"
-          echo "Updating gradle.properties with version: $new_version"
-          # 使用 sed 命令更新 appVersionName
-          sed -i "s/^appVersionName=.*/appVersionName=$new_version/" gradle.properties
-          
-          # 显示更新后的文件内容
-          echo "Updated gradle.properties:"
-          cat gradle.properties | grep appVersionName
-
-      - name: Build with Gradle
-        # 仅在标签不存在时执行
-        if: steps.check_tag.outputs.skip == 'false'
-        run: ./gradlew assembleRelease
-
       - name: Generate Changelog
         # 仅在标签不存在时执行
         if: steps.check_tag.outputs.skip == 'false'
@@ -114,10 +95,10 @@ jobs:
           
           if [ -z "$latest_tag" ]; then
             # 如果没有上一个标签，就从第一次提交开始计算
-            changelog_content=$(git log --pretty=format:"* %h %s")
+            changelog_content=$(git log --grep="^feat\|^fix\|^style\|^refactor" --pretty=format:"* %h %s")
           else
             # 如果有上一个标签，就计算两个标签之间的提交
-            changelog_content=$(git log ${latest_tag}..HEAD --pretty=format:"* %h %s")
+            changelog_content=$(git log ${latest_tag}..HEAD --grep="^feat\|^fix\|^style\|^refactor" --pretty=format:"* %h %s")
           fi
           # 添加 Full Changelog 链接
           if [ -n "$latest_tag" ]; then
@@ -127,6 +108,11 @@ jobs:
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$changelog_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build with Gradle
+        # 仅在标签不存在时执行
+        if: steps.check_tag.outputs.skip == 'false'
+        run: ./gradlew assembleRelease -PappVersionName=${{ steps.branch_info.outputs.final_version }}
 
       - name: Delete old dev releases
         # 仅在dev分支且标签不存在时执行

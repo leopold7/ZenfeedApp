@@ -23,8 +23,9 @@ android {
         } catch (e: Exception) {
             1 // 如果 Git 命令失败（例如在非 Git 环境中），则使用默认值
         }
-        // versionName 从 gradle.properties 文件中读取
-        versionName = project.property("appVersionName") as String
+        // versionName 从 gradle.properties 文件中读取，或者使用 Gradle 参数传入的值
+        versionName = (project.findProperty("appVersionName") as? String) 
+            ?: (project.property("appVersionName") as String)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
