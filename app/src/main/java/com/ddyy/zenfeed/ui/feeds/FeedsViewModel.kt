@@ -118,7 +118,11 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     // 标题过滤关键词
     var titleFilterKeywords: String by mutableStateOf("")
         private set
-    
+
+    // 样式配置
+    var styleConfig: com.ddyy.zenfeed.data.StyleConfig by mutableStateOf(com.ddyy.zenfeed.data.StyleConfig())
+        private set
+
     // 监听分组模式变化，更新Feed列表
     private val _groupingModeFlow = MutableStateFlow(groupingMode)
     
@@ -199,6 +203,16 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+        // 持续监听样式配置变化
+        viewModelScope.launch {
+            settingsDataStore.styleConfig.collect {
+                if (styleConfig != it) {
+                    styleConfig = it
+                    Log.d("FeedsViewModel", "样式配置已更新: $it")
+                }
+            }
+        }
+
         // 加载初始数据和设置
         viewModelScope.launch {
             // 1. 从DataStore获取初始设置
@@ -207,12 +221,14 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             val initialImageCacheEnabled = settingsDataStore.imageCacheEnabled.first()
             val initialServerConfigs = settingsDataStore.serverConfigs.first()
             val initialTitleFilterKeywords = settingsDataStore.titleFilterKeywords.first()
+            val initialStyleConfig = settingsDataStore.styleConfig.first()
 
             categoryFilterConfigs = initialConfigs
             groupingMode = initialGroupingMode
             imageCacheEnabled = initialImageCacheEnabled
             serverConfigs = initialServerConfigs
             titleFilterKeywords = initialTitleFilterKeywords
+            styleConfig = initialStyleConfig
             _groupingModeFlow.value = initialGroupingMode
 
             Log.d("FeedsViewModel", "初始分类过滤配置已加载: ${initialConfigs.size} 个配置")
@@ -220,6 +236,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             Log.d("FeedsViewModel", "初始图片缓存设置已加载: $initialImageCacheEnabled")
             Log.d("FeedsViewModel", "初始服务器配置已加载: ${initialServerConfigs.size} 个服务器")
             Log.d("FeedsViewModel", "初始标题过滤关键词已加载: $initialTitleFilterKeywords")
+            Log.d("FeedsViewModel", "初始样式配置已加载: $initialStyleConfig")
 
             loadReadFeedIds()
             loadSearchHistory()

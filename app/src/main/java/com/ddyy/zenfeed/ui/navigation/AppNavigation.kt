@@ -43,6 +43,7 @@ import com.ddyy.zenfeed.ui.settings.SettingsViewModel
 import com.ddyy.zenfeed.ui.settings.MultiServerConfigScreen
 import com.ddyy.zenfeed.ui.settings.HomeGroupingSettingsScreen
 import com.ddyy.zenfeed.ui.settings.FeedFilterSettingsScreen
+import com.ddyy.zenfeed.ui.settings.StyleSettingsScreen
 import com.ddyy.zenfeed.ui.webview.WebViewScreen
 import com.ddyy.zenfeed.extension.defaultEnterTransition
 import com.ddyy.zenfeed.extension.defaultExitTransition
@@ -55,6 +56,7 @@ import com.ddyy.zenfeed.extension.navigateToAbout
 import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
 import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
 import com.ddyy.zenfeed.extension.navigateToFeedDetail
+import com.ddyy.zenfeed.extension.navigateToStyleSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -319,7 +321,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                         }
                     },
                     category = sharedViewModel.detailEntryCategory,
-                    imageCacheEnabled = feedsViewModel.imageCacheEnabled
+                    imageCacheEnabled = feedsViewModel.imageCacheEnabled,
+                    styleConfig = feedsViewModel.styleConfig
                 )
             }
         }
@@ -420,6 +423,17 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         ) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             FeedFilterSettingsScreen(
+                navController = navController,
+                settingsViewModel = settingsViewModel
+            )
+        }
+        composable(
+            "styleSettings",
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
+        ) {
+            val settingsViewModel = viewModel<SettingsViewModel>()
+            StyleSettingsScreen(
                 navController = navController,
                 settingsViewModel = settingsViewModel
             )

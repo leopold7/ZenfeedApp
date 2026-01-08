@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ddyy.zenfeed.data.Feed
+import com.ddyy.zenfeed.data.StyleConfig
 import com.ddyy.zenfeed.extension.generateTagColors
 import com.ddyy.zenfeed.extension.getTagFontSize
 import com.ddyy.zenfeed.extension.limitTagLength
@@ -29,6 +30,7 @@ import com.ddyy.zenfeed.extension.withReadTagAlpha
  * 文章标签展示组件
  * @param feed 文章数据
  * @param maxTags 最大显示标签数量
+ * @param styleConfig 样式配置
  * @param isDetail 是否为详情页模式（影响样式）
  * @param isRead 是否已读（影响透明度）
  * @param modifier 修饰符
@@ -39,6 +41,7 @@ fun FeedTags(
     modifier: Modifier = Modifier,
     feed: Feed,
     maxTags: Int = 3,
+    styleConfig: StyleConfig = StyleConfig(),
     isDetail: Boolean = false,
     isRead: Boolean = false,
 ) {
@@ -82,7 +85,7 @@ fun FeedTags(
                         )
                 ) {
                     Text(
-                        text = tag.limitTagLength(),
+                        text = tag.limitTagLength(styleConfig.tagMaxLength),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = getTagFontSize(isDetail = isDetail),
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium

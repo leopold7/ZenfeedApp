@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ddyy.zenfeed.data.Feed
+import com.ddyy.zenfeed.data.StyleConfig
 import com.ddyy.zenfeed.extension.orDefaultSource
 import com.ddyy.zenfeed.extension.orDefaultTitle
 import com.ddyy.zenfeed.ui.feeds.components.detail.FeedDetailPage
@@ -59,6 +60,7 @@ fun FeedDetailScreen(
     onFeedChanged: (Feed) -> Unit = {},
     category: String? = null,
     imageCacheEnabled: Boolean = true,
+    styleConfig: StyleConfig = StyleConfig()
 ) {
     // 如果没有feeds数据，显示空状态
     if (allFeeds.isEmpty()) {
@@ -268,6 +270,7 @@ fun FeedDetailScreen(
                     },
                     scrollToTopTrigger = scrollToTopTrigger,
                     imageCacheEnabled = imageCacheEnabled,
+                    styleConfig = styleConfig,
                 )
             }
         }

@@ -140,3 +140,10 @@ data class ServerConfig(
     val apiUrl: String = "",
     val backendUrl: String = ""
 )
+
+/**
+ * 样式配置数据模型
+ */
+data class StyleConfig(
+    val tagMaxLength: Int = 6
+)

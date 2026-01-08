@@ -129,6 +129,7 @@ fun FeedsScreen(
     val errorMessage = feedsViewModel.errorMessage
     val groupingMode = feedsViewModel.groupingMode
     val imageCacheEnabled = feedsViewModel.imageCacheEnabled
+    val styleConfig = feedsViewModel.styleConfig
     val onRefresh = { feedsViewModel.refreshFeeds() }
     val onCategorySelected = { category: String -> feedsViewModel.selectCategory(category) }
 
@@ -190,6 +191,7 @@ fun FeedsScreen(
         groupingMode = feedsViewModel.groupingMode,
         imageCacheEnabled = feedsViewModel.imageCacheEnabled,
         serverConfigs = feedsViewModel.serverConfigs,
+        styleConfig = styleConfig,
         modifier = modifier
     )
 }
@@ -239,7 +241,8 @@ fun FeedsScreenContent(
     onClearCacheClick: () -> Unit,
     groupingMode: String = "category",
     imageCacheEnabled: Boolean = true,
-    serverConfigs: List<com.ddyy.zenfeed.data.ServerConfig> = emptyList()
+    serverConfigs: List<com.ddyy.zenfeed.data.ServerConfig> = emptyList(),
+    styleConfig: com.ddyy.zenfeed.data.StyleConfig = com.ddyy.zenfeed.data.StyleConfig()
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
@@ -469,192 +472,192 @@ fun FeedsScreenContent(
                     // 现代化的顶部应用栏
                     CenterAlignedTopAppBar(
                         title = {
-                        if (isSearchActive) {
-                            Box {
-                                TextField(
-                                    value = searchText,
-                                    onValueChange = {
-                                        searchText = it
-                                        showSearchHistory =
-                                            it.isNotEmpty() && searchHistory.isNotEmpty()
-                                    },
-                                    placeholder = { Text("语义搜索") },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .focusRequester(focusRequester),
-                                    singleLine = true,
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = Color.Transparent,
-                                        unfocusedContainerColor = Color.Transparent,
-                                        disabledContainerColor = Color.Transparent,
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                    ),
-                                    textStyle = MaterialTheme.typography.bodyLarge,
-                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                    keyboardActions = KeyboardActions(onSearch = {
-                                        onSearchQueryChanged(searchText)
-                                        showSearchHistory = false
-                                        keyboardController?.hide()
-                                    })
-                                )
-
-                                // 搜索历史记录下拉菜单
-                                DropdownMenu(
-                                    expanded = showSearchHistory && searchHistory.isNotEmpty(),
-                                    onDismissRequest = { showSearchHistory = false },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .focusable(false), // 防止抢夺焦点
-                                    properties = androidx.compose.ui.window.PopupProperties(
-                                        focusable = false, // 禁止焦点抢夺
-                                        dismissOnBackPress = true, dismissOnClickOutside = true
-                                    )
-                                ) {
-                                    // 标题行
-                                    Row(
+                            if (isSearchActive) {
+                                Box {
+                                    TextField(
+                                        value = searchText,
+                                        onValueChange = {
+                                            searchText = it
+                                            showSearchHistory =
+                                                it.isNotEmpty() && searchHistory.isNotEmpty()
+                                        },
+                                        placeholder = { Text("语义搜索") },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "搜索历史",
-                                            style = MaterialTheme.typography.labelLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-
-                                        // 清除历史按钮
-                                        IconButton(
-                                            onClick = {
-                                                onClearSearchHistory()
-                                                showSearchHistory = false
-                                            }, modifier = Modifier.size(24.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "清除历史记录",
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-
-                                    // 历史记录列表
-                                    searchHistory.forEach { historyItem ->
-                                        DropdownMenuItem(text = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.AccessTime,
-                                                    contentDescription = "历史记录",
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                        alpha = 0.6f
-                                                    )
-                                                )
-
-                                                Spacer(modifier = Modifier.width(12.dp))
-
-                                                Text(
-                                                    text = historyItem,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                        }, onClick = {
-                                            searchText = historyItem
-                                            onSearchHistoryClick(historyItem)
+                                            .focusRequester(focusRequester),
+                                        singleLine = true,
+                                        colors = TextFieldDefaults.colors(
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent,
+                                            disabledContainerColor = Color.Transparent,
+                                            focusedIndicatorColor = Color.Transparent,
+                                            unfocusedIndicatorColor = Color.Transparent,
+                                        ),
+                                        textStyle = MaterialTheme.typography.bodyLarge,
+                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                        keyboardActions = KeyboardActions(onSearch = {
+                                            onSearchQueryChanged(searchText)
                                             showSearchHistory = false
                                             keyboardController?.hide()
                                         })
-                                    }
-                                }
-                            }
-                            LaunchedEffect(Unit) {
-                                focusRequester.requestFocus()
-                                // 延迟显示搜索历史，确保键盘先弹出
-                                delay(200)
-                                if (searchText.isEmpty() && searchHistory.isNotEmpty()) {
-                                    showSearchHistory = true
-                                    // 搜索历史显示后重新聚焦到搜索框
-                                    delay(50)
-                                    focusRequester.requestFocus()
-                                }
-                            }
-                        } else {
-                            Text(
-                                text = "Zenfeed",
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp
-                                ),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable(
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() }) {
-                                    val currentTime = System.currentTimeMillis()
-                                    if (currentTime - lastClickTime <= doubleTapThreshold) {
-                                        // 双击事件：滚动到顶部 - 智能选择滚动方式
-                                        coroutineScope.launch {
-                                            try {
-                                                // 根据 pagerState 获取当前可见的列表状态并滚动
-                                                val categoryToScroll =
-                                                    pagerCategories.getOrNull(pagerState.currentPage)
-                                                val stateToScroll =
-                                                    categoryToScroll?.let { listStates[it] }
-                                                val currentIndex =
-                                                    stateToScroll?.firstVisibleItemIndex ?: 0
-                                                val animationThreshold = 20 // 跳转距离阈值
+                                    )
 
-                                                if (currentIndex <= animationThreshold) {
-                                                    // 距离较短，使用动画滚动提供流畅体验
-                                                    Log.d(
-                                                        "FeedsScreen",
-                                                        "双击标题滚动距离: $currentIndex，使用动画滚动"
-                                                    )
-                                                    stateToScroll?.animateScrollToItem(0)
-                                                } else {
-                                                    // 距离较长，直接跳转提升性能
-                                                    Log.d(
-                                                        "FeedsScreen",
-                                                        "双击标题滚动距离: $currentIndex，直接跳转"
-                                                    )
-                                                    stateToScroll?.scrollToItem(0)
-                                                }
-                                            } catch (e: CancellationException) {
-                                                // 检查是否是LeftCompositionCancellationException
-                                                if (e.message?.contains("left the composition") == true) {
-                                                    Log.w(
-                                                        "FeedsScreen",
-                                                        "组合已离开，双击标题滚动操作被取消",
-                                                        e
-                                                    )
-                                                    // 不重新抛出LeftCompositionCancellationException
-                                                } else {
-                                                    Log.w(
-                                                        "FeedsScreen",
-                                                        "协程被取消，双击标题滚动操作终止",
-                                                        e
-                                                    )
-                                                    throw e
-                                                }
-                                            } catch (e: Exception) {
-                                                Log.e("FeedsScreen", "双击标题滚动失败", e)
+                                    // 搜索历史记录下拉菜单
+                                    DropdownMenu(
+                                        expanded = showSearchHistory && searchHistory.isNotEmpty(),
+                                        onDismissRequest = { showSearchHistory = false },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .focusable(false), // 防止抢夺焦点
+                                        properties = androidx.compose.ui.window.PopupProperties(
+                                            focusable = false, // 禁止焦点抢夺
+                                            dismissOnBackPress = true, dismissOnClickOutside = true
+                                        )
+                                    ) {
+                                        // 标题行
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "搜索历史",
+                                                style = MaterialTheme.typography.labelLarge.copy(
+                                                    fontWeight = FontWeight.Medium
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+
+                                            // 清除历史按钮
+                                            IconButton(
+                                                onClick = {
+                                                    onClearSearchHistory()
+                                                    showSearchHistory = false
+                                                }, modifier = Modifier.size(24.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = "清除历史记录",
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
                                             }
                                         }
-                                        lastClickTime = 0L // 重置时间避免三击
-                                    } else {
-                                        lastClickTime = currentTime
+
+                                        // 历史记录列表
+                                        searchHistory.forEach { historyItem ->
+                                            DropdownMenuItem(text = {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.AccessTime,
+                                                        contentDescription = "历史记录",
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                            alpha = 0.6f
+                                                        )
+                                                    )
+
+                                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                                    Text(
+                                                        text = historyItem,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }, onClick = {
+                                                searchText = historyItem
+                                                onSearchHistoryClick(historyItem)
+                                                showSearchHistory = false
+                                                keyboardController?.hide()
+                                            })
+                                        }
                                     }
-                                })
-                        }
-                    },
+                                }
+                                LaunchedEffect(Unit) {
+                                    focusRequester.requestFocus()
+                                    // 延迟显示搜索历史，确保键盘先弹出
+                                    delay(200)
+                                    if (searchText.isEmpty() && searchHistory.isNotEmpty()) {
+                                        showSearchHistory = true
+                                        // 搜索历史显示后重新聚焦到搜索框
+                                        delay(50)
+                                        focusRequester.requestFocus()
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = "Zenfeed",
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }) {
+                                        val currentTime = System.currentTimeMillis()
+                                        if (currentTime - lastClickTime <= doubleTapThreshold) {
+                                            // 双击事件：滚动到顶部 - 智能选择滚动方式
+                                            coroutineScope.launch {
+                                                try {
+                                                    // 根据 pagerState 获取当前可见的列表状态并滚动
+                                                    val categoryToScroll =
+                                                        pagerCategories.getOrNull(pagerState.currentPage)
+                                                    val stateToScroll =
+                                                        categoryToScroll?.let { listStates[it] }
+                                                    val currentIndex =
+                                                        stateToScroll?.firstVisibleItemIndex ?: 0
+                                                    val animationThreshold = 20 // 跳转距离阈值
+
+                                                    if (currentIndex <= animationThreshold) {
+                                                        // 距离较短，使用动画滚动提供流畅体验
+                                                        Log.d(
+                                                            "FeedsScreen",
+                                                            "双击标题滚动距离: $currentIndex，使用动画滚动"
+                                                        )
+                                                        stateToScroll?.animateScrollToItem(0)
+                                                    } else {
+                                                        // 距离较长，直接跳转提升性能
+                                                        Log.d(
+                                                            "FeedsScreen",
+                                                            "双击标题滚动距离: $currentIndex，直接跳转"
+                                                        )
+                                                        stateToScroll?.scrollToItem(0)
+                                                    }
+                                                } catch (e: CancellationException) {
+                                                    // 检查是否是LeftCompositionCancellationException
+                                                    if (e.message?.contains("left the composition") == true) {
+                                                        Log.w(
+                                                            "FeedsScreen",
+                                                            "组合已离开，双击标题滚动操作被取消",
+                                                            e
+                                                        )
+                                                        // 不重新抛出LeftCompositionCancellationException
+                                                    } else {
+                                                        Log.w(
+                                                            "FeedsScreen",
+                                                            "协程被取消，双击标题滚动操作终止",
+                                                            e
+                                                        )
+                                                        throw e
+                                                    }
+                                                } catch (e: Exception) {
+                                                    Log.e("FeedsScreen", "双击标题滚动失败", e)
+                                                }
+                                            }
+                                            lastClickTime = 0L // 重置时间避免三击
+                                        } else {
+                                            lastClickTime = currentTime
+                                        }
+                                    })
+                            }
+                        },
                         navigationIcon = {
                             IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
                                 Icon(
@@ -830,9 +833,10 @@ fun FeedsScreenContent(
                         val categorizedFeeds = remember(feedsUiState.feeds, groupingMode) {
                             feedsUiState.feeds.groupByMode(groupingMode)
                         }
-                        
+
                         // 获取"全部"页面的过滤后文章列表
-                        val allFeedsFiltered = (feedsUiState as? FeedsUiState.Success)?.allFeeds ?: emptyList()
+                        val allFeedsFiltered =
+                            (feedsUiState as? FeedsUiState.Success)?.allFeeds ?: emptyList()
 
                         // 处理返回时的滚动定位 - 检测页面重新进入
                         LaunchedEffect(Unit) {
@@ -1100,170 +1104,181 @@ fun FeedsScreenContent(
                                                 } else null,
                                                 isCurrentlyPlaying = isCurrentlyPlaying,
                                                 isPlaying = isPlaying,
-                                                imageCacheEnabled = imageCacheEnabled)
+                                                imageCacheEnabled = imageCacheEnabled,
+                                                styleConfig = styleConfig
+                                            )
                                         }
+                                    }
+
+                                    // 显示"跳转到最近阅读"按钮
+                                    if (isAtTop && lastReadIndex != null && lastReadIndex > 0) {
+                                        JumpToLastReadButton(
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    try {
+                                                        // 计算跳转距离，决定使用动画还是直接跳转
+                                                        val currentIndex =
+                                                            listState.firstVisibleItemIndex
+                                                        val jumpDistance =
+                                                            abs(lastReadIndex - currentIndex)
+                                                        val animationThreshold =
+                                                            20 // 跳转距离阈值，超过20条直接跳转
+
+                                                        if (jumpDistance <= animationThreshold) {
+                                                            // 距离较短，使用动画滚动提供流畅体验
+                                                            Log.d(
+                                                                "FeedsScreen",
+                                                                "跳转距离: $jumpDistance，使用动画滚动到最近阅读"
+                                                            )
+                                                            listState.animateScrollToItem(
+                                                                lastReadIndex
+                                                            )
+                                                        } else {
+                                                            // 距离较长，直接跳转提升性能
+                                                            Log.d(
+                                                                "FeedsScreen",
+                                                                "跳转距离: $jumpDistance，直接跳转到最近阅读"
+                                                            )
+                                                            listState.scrollToItem(lastReadIndex)
+                                                        }
+                                                    } catch (e: CancellationException) {
+                                                        // 检查是否是LeftCompositionCancellationException
+                                                        if (e.message?.contains("left the composition") == true) {
+                                                            Log.w(
+                                                                "FeedsScreen",
+                                                                "组合已离开，跳转到最近阅读操作被取消",
+                                                                e
+                                                            )
+                                                            // 不重新抛出LeftCompositionCancellationException
+                                                        } else {
+                                                            Log.w(
+                                                                "FeedsScreen",
+                                                                "协程被取消，跳转到最近阅读操作终止",
+                                                                e
+                                                            )
+                                                            throw e
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Log.e(
+                                                            "FeedsScreen",
+                                                            "跳转到最近阅读失败",
+                                                            e
+                                                        )
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .padding(bottom = 16.dp)
+                                        )
                                     }
                                 }
 
-                                // 显示"跳转到最近阅读"按钮
-                                if (isAtTop && lastReadIndex != null && lastReadIndex > 0) {
-                                    JumpToLastReadButton(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                try {
-                                                    // 计算跳转距离，决定使用动画还是直接跳转
-                                                    val currentIndex =
-                                                        listState.firstVisibleItemIndex
-                                                    val jumpDistance =
-                                                        abs(lastReadIndex - currentIndex)
-                                                    val animationThreshold = 20 // 跳转距离阈值，超过20条直接跳转
+                                // 搜索阈值设置对话框
+                                if (showThresholdDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showThresholdDialog = false },
+                                        title = { Text("搜索设置") },
+                                        text = {
+                                            Column {
+                                                // 搜索阈值设置
+                                                Text(
+                                                    text = "搜索阈值：0.0 - 1.0\n数值越高，搜索结果越精确\n默认值：0.55",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Spacer(modifier = Modifier.padding(vertical = 8.dp))
+                                                Slider(
+                                                    value = currentEditThreshold,
+                                                    onValueChange = { currentEditThreshold = it },
+                                                    valueRange = 0f..1f,
+                                                    steps = 19, // 20个间隔，步长0.05
+                                                    modifier = Modifier.fillMaxWidth()
+                                                )
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Text(
+                                                        text = "0.0",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                    Text(
+                                                        text = String.format(
+                                                            Locale.US,
+                                                            "%.2f",
+                                                            currentEditThreshold
+                                                        ),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    Text(
+                                                        text = "1.0",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
 
-                                                    if (jumpDistance <= animationThreshold) {
-                                                        // 距离较短，使用动画滚动提供流畅体验
-                                                        Log.d(
-                                                            "FeedsScreen",
-                                                            "跳转距离: $jumpDistance，使用动画滚动到最近阅读"
-                                                        )
-                                                        listState.animateScrollToItem(lastReadIndex)
-                                                    } else {
-                                                        // 距离较长，直接跳转提升性能
-                                                        Log.d(
-                                                            "FeedsScreen",
-                                                            "跳转距离: $jumpDistance，直接跳转到最近阅读"
-                                                        )
-                                                        listState.scrollToItem(lastReadIndex)
-                                                    }
-                                                } catch (e: CancellationException) {
-                                                    // 检查是否是LeftCompositionCancellationException
-                                                    if (e.message?.contains("left the composition") == true) {
-                                                        Log.w(
-                                                            "FeedsScreen",
-                                                            "组合已离开，跳转到最近阅读操作被取消",
-                                                            e
-                                                        )
-                                                        // 不重新抛出LeftCompositionCancellationException
-                                                    } else {
-                                                        Log.w(
-                                                            "FeedsScreen",
-                                                            "协程被取消，跳转到最近阅读操作终止",
-                                                            e
-                                                        )
-                                                        throw e
-                                                    }
-                                                } catch (e: Exception) {
-                                                    Log.e("FeedsScreen", "跳转到最近阅读失败", e)
+                                                Spacer(modifier = Modifier.padding(vertical = 16.dp))
+
+                                                // 搜索结果限制设置
+                                                Text(
+                                                    text = "最大结果数量：1 - 500\n限制搜索返回的结果数量\n默认值：500",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Spacer(modifier = Modifier.padding(vertical = 8.dp))
+                                                Slider(
+                                                    value = currentEditLimit.toFloat(),
+                                                    onValueChange = {
+                                                        currentEditLimit = it.toInt()
+                                                    },
+                                                    valueRange = 1f..500f,
+                                                    steps = 498, // 499个间隔，步长1
+                                                    modifier = Modifier.fillMaxWidth()
+                                                )
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Text(
+                                                        text = "1",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                    Text(
+                                                        text = currentEditLimit.toString(),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    Text(
+                                                        text = "500",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
                                                 }
                                             }
                                         },
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .padding(bottom = 16.dp)
-                                    )
+                                        confirmButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    onSearchThresholdChanged(currentEditThreshold)
+                                                    onSearchLimitChanged(currentEditLimit)
+                                                    showThresholdDialog = false
+                                                }) {
+                                                Text("确定")
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(
+                                                onClick = { showThresholdDialog = false }) {
+                                                Text("取消")
+                                            }
+                                        })
                                 }
-                            }
-
-                            // 搜索阈值设置对话框
-                            if (showThresholdDialog) {
-                                AlertDialog(
-                                    onDismissRequest = { showThresholdDialog = false },
-                                    title = { Text("搜索设置") },
-                                    text = {
-                                        Column {
-                                            // 搜索阈值设置
-                                            Text(
-                                                text = "搜索阈值：0.0 - 1.0\n数值越高，搜索结果越精确\n默认值：0.55",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Spacer(modifier = Modifier.padding(vertical = 8.dp))
-                                            Slider(
-                                                value = currentEditThreshold,
-                                                onValueChange = { currentEditThreshold = it },
-                                                valueRange = 0f..1f,
-                                                steps = 19, // 20个间隔，步长0.05
-                                                modifier = Modifier.fillMaxWidth()
-                                            )
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text(
-                                                    text = "0.0",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Text(
-                                                    text = String.format(
-                                                        Locale.US,
-                                                        "%.2f",
-                                                        currentEditThreshold
-                                                    ),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                                Text(
-                                                    text = "1.0",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.padding(vertical = 16.dp))
-
-                                            // 搜索结果限制设置
-                                            Text(
-                                                text = "最大结果数量：1 - 500\n限制搜索返回的结果数量\n默认值：500",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Spacer(modifier = Modifier.padding(vertical = 8.dp))
-                                            Slider(
-                                                value = currentEditLimit.toFloat(),
-                                                onValueChange = { currentEditLimit = it.toInt() },
-                                                valueRange = 1f..500f,
-                                                steps = 498, // 499个间隔，步长1
-                                                modifier = Modifier.fillMaxWidth()
-                                            )
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text(
-                                                    text = "1",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Text(
-                                                    text = currentEditLimit.toString(),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                                Text(
-                                                    text = "500",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    },
-                                    confirmButton = {
-                                        TextButton(
-                                            onClick = {
-                                                onSearchThresholdChanged(currentEditThreshold)
-                                                onSearchLimitChanged(currentEditLimit)
-                                                showThresholdDialog = false
-                                            }) {
-                                            Text("确定")
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(
-                                            onClick = { showThresholdDialog = false }) {
-                                            Text("取消")
-                                        }
-                                    })
                             }
                         }
                     }
