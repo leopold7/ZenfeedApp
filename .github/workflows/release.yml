@@ -114,10 +114,10 @@ jobs:
           
           if [ -z "$latest_tag" ]; then
             # 如果没有上一个标签，就从第一次提交开始计算
-            changelog_content=$(git log --pretty=format:"* %h %s")
+            changelog_content=$(git log --grep="^feat\|^fix\|^style\|^refactor" --pretty=format:"* %h %s")
           else
             # 如果有上一个标签，就计算两个标签之间的提交
-            changelog_content=$(git log ${latest_tag}..HEAD --pretty=format:"* %h %s")
+            changelog_content=$(git log ${latest_tag}..HEAD --grep="^feat\|^fix\|^style\|^refactor" --pretty=format:"* %h %s")
           fi
           # 添加 Full Changelog 链接
           if [ -n "$latest_tag" ]; then
