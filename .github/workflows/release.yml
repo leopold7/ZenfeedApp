@@ -80,8 +80,8 @@ jobs:
         if: steps.check_tag.outputs.skip == 'false'
         id: changelog
         run: |
-          # 查找最新的标签
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          # 查找最新的稳定版本标签（不含 dev）
+          latest_tag=$(git tag -l "v*" --sort=-version:refname | grep -v "dev" | head -n 1)
           
           if [ -z "$latest_tag" ]; then
             # 如果没有上一个标签，就从第一次提交开始计算
