@@ -525,6 +525,11 @@ class FeedRepository private constructor(private val context: Context) {
                                 break
                             }
                         }
+                        // 如果循环正常结束且没有触发 break，说明所有部分都相等
+                        // 这种情况下也应该认为 master 是新版本（因为 master 是稳定版本）
+                        if (!masterIsNewerOrEqual) {
+                            masterIsNewerOrEqual = true
+                        }
                         // 如果 master 的核心版本号 >= 当前 dev 的核心版本号，则认为 master 是新版本
                         // 因为 master 是稳定版本，优先选择
                         if (masterIsNewerOrEqual) {
