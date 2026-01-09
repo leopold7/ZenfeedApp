@@ -502,10 +502,43 @@ class FeedRepository private constructor(private val context: Context) {
                 val masterRelease = allReleases.firstOrNull { !it.tagName.contains("dev") }
                 val latestMasterRelease = if (masterRelease != null) {
                     val masterVersion = masterRelease.tagName.removePrefix("v")
-                    if (isNewerVersion(masterVersion, currentVersion, "master")) {
-                        masterRelease
+                    // 如果当前版本是 dev 版本，需要特殊处理
+                    if (currentVersion.contains("dev")) {
+                        // 提取当前 dev 版本的核心版本号
+                        val currentCoreVersion = currentVersion.split("dev")[0].trimEnd('.')
+                        // 提取 master 版本的核心版本号
+                        val masterCoreVersion = masterVersion
+                        // 比较 master 的核心版本号是否 >= 当前 dev 的核心版本号
+                        val currentParts = currentCoreVersion.split(".").map { it.toIntOrNull() ?: 0 }
+                        val masterParts = masterCoreVersion.split(".").map { it.toIntOrNull() ?: 0 }
+                        val partCount = maxOf(currentParts.size, masterParts.size)
+                        
+                        var masterIsNewerOrEqual = false
+                        for (i in 0 until partCount) {
+                            val currentPart = currentParts.getOrElse(i) { 0 }
+                            val masterPart = masterParts.getOrElse(i) { 0 }
+                            if (masterPart > currentPart) {
+                                masterIsNewerOrEqual = true
+                                break
+                            }
+                            if (masterPart < currentPart) {
+                                break
+                            }
+                        }
+                        // 如果 master 的核心版本号 >= 当前 dev 的核心版本号，则认为 master 是新版本
+                        // 因为 master 是稳定版本，优先选择
+                        if (masterIsNewerOrEqual) {
+                            masterRelease
+                        } else {
+                            null
+                        }
                     } else {
-                        null
+                        // 当前版本是稳定版本，使用正常的比较逻辑
+                        if (isNewerVersion(masterVersion, currentVersion, "master")) {
+                            masterRelease
+                        } else {
+                            null
+                        }
                     }
                 } else {
                     null
