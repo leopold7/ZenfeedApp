@@ -95,6 +95,12 @@ fun NavController.navigateToFeedFilterSettings(
     navigate("feedFilterSettings", builder)
 }
 
+fun NavController.navigateToStyleSettings(
+    builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    navigate("styleSettings", builder)
+}
+
 fun NavController.navigateToLogging(
     builder: NavOptionsBuilder.() -> Unit = {}
 ) {

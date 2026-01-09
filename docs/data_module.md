@@ -114,6 +114,149 @@ val isValid = settingsDataStore.isValidUrl(url)
 | `Labels` | Feed的元数据标签 | `category`、`content`、`link`、`podcastUrl`、`title`、`type`等 |
 | `FeedRequest` | Feed请求参数 | `query`、`threshold`、`labelFilters`、`summarize`、`limit`、`start`、`end` |
 | `PlaylistInfo` | 播放列表信息 | `currentIndex`、`totalCount`、`hasNext`、`hasPrevious`、`isRepeat`、`isShuffle` |
+| `CategoryFilterConfig` | 分类过滤配置 | `categoryName`、`showInAll`、`showGroup`、`sortOrder` |
+| `ServerConfig` | 服务器配置 | `name`、`apiBaseUrl`、`backendUrl` |
+
+**CategoryFilterConfig**：
+
+**职责**：
+- 表示分类过滤配置
+- 控制分类在"全部"视图中的显示
+- 控制分类是否显示分组
+- 管理分类的排序顺序
+
+**主要字段**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `categoryName` | String | 分类名称 |
+| `showInAll` | Boolean | 是否在"全部"视图中显示 |
+| `showGroup` | Boolean | 是否显示分组 |
+| `sortOrder` | Int | 排序顺序 |
+
+**使用示例**：
+
+```kotlin
+// 创建分类过滤配置
+val config = CategoryFilterConfig(
+    categoryName = "技术",
+    showInAll = true,
+    showGroup = true,
+    sortOrder = 0
+)
+
+// 序列化为JSON
+val json = Gson().toJson(config)
+
+// 从JSON反序列化
+val parsedConfig = Gson().fromJson(json, CategoryFilterConfig::class.java)
+```
+
+**ServerConfig**：
+
+**职责**：
+- 表示服务器配置信息
+- 支持多服务器配置管理
+- 包含API基础地址和后端URL
+
+**主要字段**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` | String | 服务器名称 |
+| `apiBaseUrl` | String | API基础地址 |
+| `backendUrl` | String | 后端URL |
+
+**使用示例**：
+
+```kotlin
+// 创建服务器配置
+val serverConfig = ServerConfig(
+    name = "默认服务器",
+    apiBaseUrl = "https://api.example.com/",
+    backendUrl = "https://backend.example.com/api/feeds"
+)
+
+// 序列化为JSON
+val json = Gson().toJson(serverConfig)
+
+// 从JSON反序列化
+val parsedConfig = Gson().fromJson(json, ServerConfig::class.java)
+```
+
+### 2.4 FaviconManager
+
+**职责**：
+- 管理网站图标的下载和缓存
+- 提供内存和磁盘双重缓存机制
+- 支持从URL提取域名并获取favicon
+
+**主要功能**：
+
+| 功能 | 方法签名 | 说明 |
+|------|----------|------|
+| 获取favicon | `suspend fun getFavicon(url: String?): Bitmap?` | 从URL获取favicon，优先使用缓存 |
+| 清除缓存 | `fun clearCache()` | 清除所有缓存 |
+| 获取缓存大小 | `fun getCacheSize(): Long` | 获取缓存总大小（字节） |
+| 获取内存缓存大小 | `fun getMemoryCacheSize(): Int` | 获取内存缓存项数量 |
+| 获取磁盘缓存大小 | `fun getDiskCacheSize(): Long` | 获取磁盘缓存大小（字节） |
+
+**缓存策略**：
+- **内存缓存**：使用LruCache，最多缓存50个favicon
+- **磁盘缓存**：使用DiskLruCache，最多缓存50MB，每个favicon最多缓存1小时
+- **缓存键**：使用URL的MD5哈希值作为缓存键
+
+**使用示例**：
+
+```kotlin
+// 创建FaviconManager实例
+val faviconManager = FaviconManager(context)
+
+// 获取favicon
+lifecycleScope.launch {
+    val favicon = faviconManager.getFavicon("https://example.com/article")
+    if (favicon != null) {
+        // 使用favicon
+        imageView.setImageBitmap(favicon)
+    }
+}
+
+// 清除缓存
+faviconManager.clearCache()
+
+// 获取缓存大小
+val cacheSize = faviconManager.getCacheSize()
+```
+
+### 2.5 UpdateManager
+
+**职责**：
+- 管理应用更新包的下载
+- 处理APK文件的安装
+- 提供下载进度回调
+
+**主要功能**：
+
+| 功能 | 方法签名 | 说明 |
+|------|----------|------|
+| 开始下载 | `fun startDownload(url: String, fileName: String)` | 开始下载APK文件 |
+| 安装APK | `fun installApk(downloadId: Long)` | 安装指定下载ID的APK文件 |
+
+**使用示例**：
+
+```kotlin
+// 创建UpdateManager实例
+val updateManager = UpdateManager(context)
+
+// 开始下载更新
+updateManager.startDownload(
+    url = "https://github.com/example/releases/download/v1.0.0/app-release.apk",
+    fileName = "zenfeed_update.apk"
+)
+
+// 安装下载的APK
+updateManager.installApk(downloadId)
+```
 
 ## 3. 数据流程
 

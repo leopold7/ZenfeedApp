@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ddyy.zenfeed.data.CategoryFilterConfig
 import com.ddyy.zenfeed.data.ServerConfig
 import com.ddyy.zenfeed.data.SettingsDataStore
+import com.ddyy.zenfeed.data.StyleConfig
 import com.ddyy.zenfeed.data.network.ApiClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,7 @@ data class SettingsUiState(
     val serverConfigs: List<ServerConfig> = emptyList(),
     val markPodcastAsRead: Boolean = true,
     val titleFilterKeywords: String = "",
+    val styleConfig: StyleConfig = StyleConfig(),
     val isLoading: Boolean = false,
     val message: String = "")
 
@@ -72,6 +74,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentAiPrompt = ""
     private var currentMarkPodcastAsRead = true
     private var currentTitleFilterKeywords = ""
+    private var currentStyleConfig = StyleConfig()
 
     init {
         // 初始化时加载当前设置
@@ -109,6 +112,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val aiPrompt = settingsDataStore.aiPrompt.first()
                 val markPodcastAsRead = settingsDataStore.markPodcastAsRead.first()
                 val titleFilterKeywords = settingsDataStore.titleFilterKeywords.first()
+                val styleConfig = settingsDataStore.styleConfig.first()
 
                 _uiState.value = _uiState.value.copy(
                     apiUrl = apiUrl,
@@ -132,6 +136,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     aiPrompt = aiPrompt,
                     markPodcastAsRead = markPodcastAsRead,
                     titleFilterKeywords = titleFilterKeywords,
+                    styleConfig = styleConfig,
                     isLoading = false
                 )
 
@@ -173,6 +178,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     currentAiPrompt = aiPrompt
                 }
                 currentMarkPodcastAsRead = markPodcastAsRead
+                currentTitleFilterKeywords = titleFilterKeywords
+                currentStyleConfig = styleConfig
                 currentThemeMode = themeMode
                 currentCheckUpdateOnStart = checkUpdateOnStart
             }
@@ -328,7 +335,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateMarkPodcastAsRead(enabled: Boolean) {
         currentMarkPodcastAsRead = enabled
     }
-    
+
     /**
      * 更新标题过滤关键词
      * @param keywords 标题过滤关键词
@@ -336,9 +343,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateTitleFilterKeywords(keywords: String) {
         currentTitleFilterKeywords = keywords
     }
-    
+
     /**
-     * 保存标题过滤设置
+     * 保存标题过滤关键词设置
      */
     fun saveTitleFilterSettings() {
         viewModelScope.launch {
@@ -347,6 +354,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _uiState.value = _uiState.value.copy(titleFilterKeywords = currentTitleFilterKeywords)
             } catch (e: Exception) {
                 showMessage("保存标题过滤设置失败：${e.message}")
+            }
+        }
+    }
+
+    /**
+     * 更新样式配置
+     * @param config 样式配置
+     */
+    fun updateStyleConfig(config: StyleConfig) {
+        currentStyleConfig = config
+    }
+
+    /**
+     * 保存样式配置设置
+     */
+    fun saveStyleConfigSettings() {
+        viewModelScope.launch {
+            try {
+                settingsDataStore.saveStyleConfig(currentStyleConfig)
+                _uiState.value = _uiState.value.copy(styleConfig = currentStyleConfig)
+            } catch (e: Exception) {
+                showMessage("保存样式设置失败：${e.message}")
             }
         }
     }

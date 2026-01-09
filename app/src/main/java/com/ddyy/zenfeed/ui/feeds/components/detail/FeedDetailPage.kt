@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.PlaylistInfo
+import com.ddyy.zenfeed.data.StyleConfig
 import com.ddyy.zenfeed.extension.orDefaultSource
 import com.ddyy.zenfeed.extension.orDefaultTitle
 import com.ddyy.zenfeed.ui.feeds.components.common.FeedTags
@@ -64,6 +65,7 @@ fun FeedDetailPage(
     onTableClick: (String, String) -> Unit = { _, _ -> },
     scrollToTopTrigger: Int = 0,
     imageCacheEnabled: Boolean = true,
+    styleConfig: StyleConfig = StyleConfig()
 ) {
     // 滚动状态
     val listState = rememberLazyListState()
@@ -129,6 +131,7 @@ fun FeedDetailPage(
                     FeedTags(
                         feed = feed,
                         maxTags = if (feed.labels.podcastUrl?.isNotBlank() == true) 4 else 5,
+                        styleConfig = styleConfig,
                         isDetail = true,
                         isRead = feed.isRead,
                         modifier = Modifier.weight(1f)

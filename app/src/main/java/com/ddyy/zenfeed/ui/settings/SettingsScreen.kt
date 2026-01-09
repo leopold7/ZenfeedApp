@@ -75,6 +75,7 @@ import com.ddyy.zenfeed.ui.theme.ZenfeedTheme
 import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
 import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
 import com.ddyy.zenfeed.extension.navigateToFeedFilterSettings
+import com.ddyy.zenfeed.extension.navigateToStyleSettings
 import android.widget.Toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -179,6 +180,7 @@ fun SettingsScreen(
                 imageCacheEnabled = uiState.imageCacheEnabled,
                 markPodcastAsRead = uiState.markPodcastAsRead,
                 titleFilterKeywords = uiState.titleFilterKeywords,
+                styleConfig = uiState.styleConfig,
                 isLoading = uiState.isLoading,
                 navController = navController,
                 onHomeGroupingModeChange = {
@@ -841,6 +843,7 @@ private fun PersonalizationSettingsCard(
     imageCacheEnabled: Boolean,
     markPodcastAsRead: Boolean,
     titleFilterKeywords: String,
+    styleConfig: com.ddyy.zenfeed.data.StyleConfig,
     isLoading: Boolean,
     navController: NavController,
     onHomeGroupingModeChange: (String) -> Unit,
@@ -1022,6 +1025,28 @@ private fun PersonalizationSettingsCard(
                 ) {
                     Text(
                         text = currentKeywords,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            // 样式设置选项
+            Column {
+                Text(
+                    text = "样式设置",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                OutlinedButton(
+                    onClick = { navController.navigateToStyleSettings() },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "样式设置",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

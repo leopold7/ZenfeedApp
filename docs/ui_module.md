@@ -89,6 +89,9 @@ NavHost(
 | `FeedDetailScreen` | 展示文章详情 | HTML内容渲染、左右滑动切换、播客播放 |
 | `WebViewScreen` | 内置浏览器 | 网页加载、前进后退、分享功能 |
 | `SettingsScreen` | 设置页面 | API配置、代理设置、主题切换 |
+| `MultiServerConfigScreen` | 多服务器配置 | 添加、编辑、删除、排序服务器配置 |
+| `FeedFilterSettingsScreen` | Feed过滤设置 | 设置Feed标题过滤关键词 |
+| `HomeGroupingSettingsScreen` | 首页分组设置 | 分类排序、显示配置、分组管理 |
 | `LoggingScreen` | 日志页面 | 展示应用日志、清除日志 |
 | `AboutScreen` | 关于页面 | 应用信息、版本号、开源协议 |
 
@@ -136,6 +139,224 @@ LaunchedEffect(Unit) {
 }
 ```
 
+### 2.5 设置界面组件
+
+**MultiServerConfigScreen**：
+
+**职责**：
+- 管理多服务器配置
+- 提供添加、编辑、删除、排序服务器配置的功能
+- 持久化服务器配置到本地存储
+
+**主要功能**：
+
+| 功能 | 说明 |
+|------|------|
+| 显示服务器列表 | 展示所有已配置的服务器 |
+| 添加新服务器 | 通过对话框添加新的服务器配置 |
+| 编辑服务器 | 修改现有服务器的名称、API地址和后端地址 |
+| 删除服务器 | 删除指定的服务器配置 |
+| 排序服务器 | 通过拖拽或按钮调整服务器顺序 |
+| 保存配置 | 将配置持久化到本地存储 |
+
+**使用示例**：
+
+```kotlin
+@Composable
+fun MultiServerConfigScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    settingsViewModel: SettingsViewModel = viewModel()
+) {
+    val serverConfigs by settingsViewModel.serverConfigs.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+    var editingConfig by remember { mutableStateOf<ServerConfig?>(null) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("多服务器配置") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "添加服务器")
+            }
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.padding(padding),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(serverConfigs) { config ->
+                ServerConfigItem(
+                    serverConfig = config,
+                    onConfigChange = { settingsViewModel.updateServerConfig(it) },
+                    onDelete = { settingsViewModel.deleteServerConfig(config) }
+                )
+            }
+        }
+    }
+
+    if (showDialog) {
+        ServerConfigDialog(
+            initialConfig = editingConfig,
+            onDismiss = { showDialog = false; editingConfig = null },
+            onConfirm = { config ->
+                settingsViewModel.addOrUpdateServerConfig(config)
+                showDialog = false
+                editingConfig = null
+            }
+        )
+    }
+}
+```
+
+**FeedFilterSettingsScreen**：
+
+**职责**：
+- 配置Feed标题过滤规则
+- 支持多个过滤关键词
+- 持久化过滤配置
+
+**主要功能**：
+
+| 功能 | 说明 |
+|------|------|
+| 显示当前过滤关键词 | 展示已配置的过滤关键词列表 |
+| 添加/编辑关键词 | 通过输入框添加或修改过滤关键词 |
+| 删除关键词 | 删除指定的过滤关键词 |
+| 保存配置 | 将配置持久化到本地存储 |
+
+**使用示例**：
+
+```kotlin
+@Composable
+fun FeedFilterSettingsScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    settingsViewModel: SettingsViewModel = viewModel()
+) {
+    val filterKeywords by settingsViewModel.feedFilterKeywords.collectAsState()
+    var keywordsInput by remember { mutableStateOf(filterKeywords.joinToString(", ")) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Feed过滤设置") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            OutlinedTextField(
+                value = keywordsInput,
+                onValueChange = { keywordsInput = it },
+                label = { Text("过滤关键词") },
+                placeholder = { Text("输入关键词，多个关键词用逗号分隔") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 5
+            )
+
+            Text(
+                text = "说明：Feed标题中包含任一关键词的文章将被过滤掉",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Button(
+                onClick = {
+                    settingsViewModel.saveFeedFilterKeywords(
+                        keywordsInput.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    )
+                    navController.navigateUp()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("保存")
+            }
+        }
+    }
+}
+```
+
+**HomeGroupingSettingsScreen**：
+
+**职责**：
+- 配置首页分类分组显示
+- 管理分类排序和可见性
+- 控制分类在"全部"视图中的显示
+
+**主要功能**：
+
+| 功能 | 说明 |
+|------|------|
+| 显示分类列表 | 展示所有分类及其配置 |
+| 调整分类顺序 | 通过按钮调整分类的排序顺序 |
+| 配置可见性 | 设置分类是否在"全部"视图中显示 |
+| 配置分组 | 设置分类是否显示分组 |
+| 保存配置 | 将配置持久化到本地存储 |
+
+**使用示例**：
+
+```kotlin
+@Composable
+fun HomeGroupingSettingsScreen(
+    navController: NavController,
+    categories: List<String>,
+    settingsViewModel: SettingsViewModel = viewModel()
+) {
+    val categoryConfigs by settingsViewModel.categoryFilterConfigs.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("首页分组设置") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.padding(padding),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            itemsIndexed(categoryConfigs) { index, config ->
+                CategoryFilterConfigCard(
+                    config = config,
+                    index = index,
+                    onConfigChange = { settingsViewModel.updateCategoryFilterConfig(it) },
+                    canMoveToTop = index > 0,
+                    canMoveUp = index > 0,
+                    canMoveDown = index < categoryConfigs.size - 1,
+                    onMoveToTop = { settingsViewModel.moveCategoryFilterConfigToTop(index) },
+                    onMoveUp = { settingsViewModel.moveCategoryFilterConfigUp(index) },
+                    onMoveDown = { settingsViewModel.moveCategoryFilterConfigDown(index) }
+                )
+            }
+        }
+    }
+}
+```
+
 ## 3. 导航系统
 
 ### 3.1 导航结构
@@ -150,6 +371,9 @@ LaunchedEffect(Unit) {
 | `feedDetail` | `FeedDetailScreen` | 文章详情页面 |
 | `webview` | `WebViewScreen` | 内置浏览器页面 |
 | `settings` | `SettingsScreen` | 设置页面 |
+| `multiServerConfig` | `MultiServerConfigScreen` | 多服务器配置页面 |
+| `feedFilterSettings` | `FeedFilterSettingsScreen` | Feed过滤设置页面 |
+| `homeGroupingSettings` | `HomeGroupingSettingsScreen` | 首页分组设置页面 |
 | `logging` | `LoggingScreen` | 日志页面 |
 | `about` | `AboutScreen` | 关于页面 |
 

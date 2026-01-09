@@ -1,10 +1,10 @@
-# GitHub Actions 工作流：master 分支自动 Release
-name: Create GitHub Release
+# GitHub Actions 工作流：dev 分支自动 Release
+name: Create Dev Release
 
 on:
   push:
     branches:
-      - master # 当向 master 分支推送代码时触发
+      - dev    # 当向 dev 分支推送代码时触发
 
 jobs:
   build-and-release:
@@ -20,7 +20,7 @@ jobs:
         # 拉取所有历史记录，以便能正确生成更新日志
         with:
           fetch-depth: 0
-          ref: master
+          ref: dev
 
       - name: Show Git info
         run: |
@@ -30,8 +30,8 @@ jobs:
           echo "=== Current commit ==="
           git rev-parse HEAD
           echo ""
-          echo "=== Latest commits on master ==="
-          git log master --oneline -5
+          echo "=== Latest commits on dev ==="
+          git log dev --oneline -5
           echo ""
           echo "=== Remote branches ==="
           git branch -r
@@ -57,12 +57,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Determine version information
+      - name: Determine dev version information
         id: branch_info
         run: |
           # 读取版本名称
           versionName=$(grep 'appVersionName' gradle.properties | cut -d'=' -f2)
-          echo "final_version=$versionName" >> $GITHUB_OUTPUT
+          echo "base_version=$versionName" >> $GITHUB_OUTPUT
+          
+          # 生成时间戳
+          timestamp=$(date +'%Y%m%d%H%M%S')
+          echo "timestamp=$timestamp" >> $GITHUB_OUTPUT
+          
+          # 为dev分支生成特殊版本号
+          dev_version="${versionName}.dev.${timestamp}"
+          echo "final_version=$dev_version" >> $GITHUB_OUTPUT
 
       - name: Check if tag exists
         id: check_tag
@@ -80,8 +88,8 @@ jobs:
         if: steps.check_tag.outputs.skip == 'false'
         id: changelog
         run: |
-          # 查找最新的标签
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          # dev分支：查找最新的稳定版本标签（不以 dev 结尾）
+          latest_tag=$(git tag -l "v*" --sort=-version:refname | grep -v "dev" | head -n 1)
           
           if [ -z "$latest_tag" ]; then
             # 如果没有上一个标签，就从第一次提交开始计算
@@ -104,11 +112,43 @@ jobs:
         if: steps.check_tag.outputs.skip == 'false'
         run: ./gradlew assembleRelease -PappVersionName=${{ steps.branch_info.outputs.final_version }}
 
+      - name: Delete old dev releases
+        # 仅在标签不存在时执行
+        if: steps.check_tag.outputs.skip == 'false'
+        run: |
+          # 获取所有发布版本
+          releases=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases)
+          
+          # 过滤出dev版本并删除
+          echo "$releases" | jq -r '.[] | select(.tag_name | test("dev")) | .id' | while read -r release_id; do
+            echo "Deleting old dev release: $release_id"
+            curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases/$release_id
+          done
+
+      - name: Delete old dev tags
+        # 仅在标签不存在时执行
+        if: steps.check_tag.outputs.skip == 'false'
+        run: |
+          # 列出所有包含 "dev" 的标签
+          dev_tags=$(git tag -l "*dev*")
+          
+          # 遍历并删除这些标签
+          if [ -n "$dev_tags" ]; then
+            echo "Deleting old dev tags:"
+            echo "$dev_tags" | while read -r tag; do
+              echo "Deleting tag: $tag"
+              git tag -d "$tag"
+              git push origin --delete "$tag"
+            done
+          else
+            echo "No dev tags found to delete"
+          fi
+
       - name: Create Git Tag and Release
         # 仅在标签不存在时执行
         if: steps.check_tag.outputs.skip == 'false'
         run: |
-          # 手动创建 tag，确保指向当前 HEAD（master 分支的最新 commit）
+          # 手动创建 tag，确保指向当前 HEAD（dev 分支的最新 commit）
           git tag "v${{ steps.branch_info.outputs.final_version }}"
           git push origin "v${{ steps.branch_info.outputs.final_version }}"
 
@@ -123,4 +163,6 @@ jobs:
           body: ${{ steps.changelog.outputs.changelog }}
           # 使用我们生成的版本号来创建 Release 和 Tag
           tag_name: "v${{ steps.branch_info.outputs.final_version }}"
-          name: "Release v${{ steps.branch_info.outputs.final_version }}"
+          name: "Dev Release v${{ steps.branch_info.outputs.final_version }}"
+          # dev分支设置为预发布
+          prerelease: true

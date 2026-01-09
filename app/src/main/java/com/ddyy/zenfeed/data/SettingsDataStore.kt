@@ -53,6 +53,10 @@ class SettingsDataStore(private val context: Context) {
         // 文章标题过滤关键词相关的键
         private val TITLE_FILTER_KEYWORDS_KEY = stringPreferencesKey("title_filter_keywords")
 
+        // 样式设置相关的键
+        private val TAG_MAX_LENGTH_KEY = intPreferencesKey("tag_max_length")
+        private val STYLE_CONFIG_KEY = stringPreferencesKey("style_config")
+
         // 默认的API地址
         const val DEFAULT_API_BASE_URL = "https://zenfeed.xyz/"
         const val DEFAULT_BACKEND_URL = "http://zenfeed:1300"
@@ -92,6 +96,9 @@ class SettingsDataStore(private val context: Context) {
 请开始总结："""
 
         const val DEFAULT_TITLE_FILTER_KEYWORDS = ""
+
+        // 默认的样式设置
+        const val DEFAULT_TAG_MAX_LENGTH = 6 // 标签最大显示长度
     }
     
     /**
@@ -287,6 +294,31 @@ class SettingsDataStore(private val context: Context) {
         }
 
     /**
+     * 获取标签最大显示长度的Flow
+     */
+    val tagMaxLength: Flow<Int> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[TAG_MAX_LENGTH_KEY] ?: DEFAULT_TAG_MAX_LENGTH
+        }
+
+    /**
+     * 获取样式配置的Flow
+     */
+    val styleConfig: Flow<StyleConfig> = context.settingsDataStore.data
+        .map { preferences ->
+            val json = preferences[STYLE_CONFIG_KEY]
+            if (json != null) {
+                try {
+                    Gson().fromJson(json, StyleConfig::class.java)
+                } catch (e: Exception) {
+                    StyleConfig()
+                }
+            } else {
+                StyleConfig()
+            }
+        }
+
+    /**
      * 保存API基础地址
      * @param url 要保存的API基础地址
      */
@@ -472,7 +504,27 @@ class SettingsDataStore(private val context: Context) {
             preferences[MARK_PODCAST_AS_READ_KEY] = enabled
         }
     }
-    
+
+    /**
+     * 保存标签最大显示长度
+     * @param length 标签最大显示长度
+     */
+    suspend fun saveTagMaxLength(length: Int) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[TAG_MAX_LENGTH_KEY] = length
+        }
+    }
+
+    /**
+     * 保存样式配置
+     * @param config 样式配置
+     */
+    suspend fun saveStyleConfig(config: StyleConfig) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[STYLE_CONFIG_KEY] = Gson().toJson(config)
+        }
+    }
+
     /**
      * 重置多服务器配置列表
      */

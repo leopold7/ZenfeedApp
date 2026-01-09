@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.ddyy.zenfeed.ZenFeedApplication
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.ServerConfig
+import com.ddyy.zenfeed.data.StyleConfig
 import com.ddyy.zenfeed.extension.getDisplayContent
 import com.ddyy.zenfeed.extension.getPodcastButtonContainerColor
 import com.ddyy.zenfeed.extension.getPodcastButtonContentColor
@@ -63,7 +64,8 @@ fun FeedItem(
     onTogglePlayPause: (() -> Unit)? = null,
     isCurrentlyPlaying: Boolean = false,
     isPlaying: Boolean = false,
-    imageCacheEnabled: Boolean = true
+    imageCacheEnabled: Boolean = true,
+    styleConfig: StyleConfig = StyleConfig()
 ) {
     val context = LocalContext.current
     val faviconManager = remember { (context.applicationContext as ZenFeedApplication).faviconManager }
@@ -220,6 +222,7 @@ fun FeedItem(
                     FeedTags(
                         feed = feed,
                         maxTags = 3,
+                        styleConfig = styleConfig,
                         isDetail = false,
                         isRead = feed.isRead,
                         modifier = Modifier.fillMaxWidth()
