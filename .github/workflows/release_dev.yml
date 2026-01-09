@@ -147,6 +147,14 @@ jobs:
       - name: Create Git Tag and Release
         # 仅在标签不存在时执行
         if: steps.check_tag.outputs.skip == 'false'
+        run: |
+          # 手动创建 tag，确保指向当前 HEAD（dev 分支的最新 commit）
+          git tag "v${{ steps.branch_info.outputs.final_version }}"
+          git push origin "v${{ steps.branch_info.outputs.final_version }}"
+
+      - name: Create GitHub Release
+        # 仅在标签不存在时执行
+        if: steps.check_tag.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
