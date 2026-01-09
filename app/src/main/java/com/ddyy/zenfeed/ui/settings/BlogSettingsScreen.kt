@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -68,7 +70,8 @@ fun BlogSettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
     var tempMarkPodcastAsRead by remember(uiState.markPodcastAsRead) { mutableStateOf(uiState.markPodcastAsRead) }
-    val hasChanges = tempMarkPodcastAsRead != uiState.markPodcastAsRead
+    var tempPlaybackSpeed by remember(uiState.playbackSpeed) { mutableStateOf(uiState.playbackSpeed) }
+    val hasChanges = tempMarkPodcastAsRead != uiState.markPodcastAsRead || tempPlaybackSpeed != uiState.playbackSpeed
     var showExitDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.message) {
@@ -112,10 +115,12 @@ fun BlogSettingsScreen(
                 SettingsBottomButtons(
                     onReset = {
                         tempMarkPodcastAsRead = SettingsDataStore.DEFAULT_MARK_PODCAST_AS_READ
+                        tempPlaybackSpeed = SettingsDataStore.DEFAULT_PLAYBACK_SPEED
                     },
                     onSave = {
                         settingsViewModel.updateMarkPodcastAsRead(tempMarkPodcastAsRead)
-                        settingsViewModel.saveMarkPodcastAsRead()
+                        settingsViewModel.updatePlaybackSpeed(tempPlaybackSpeed)
+                        settingsViewModel.saveBlogSettings()
                         Toast.makeText(context, "保存成功", Toast.LENGTH_SHORT).show()
                     },
                     isLoading = uiState.isLoading,
@@ -178,6 +183,92 @@ fun BlogSettingsScreen(
                     }
                 }
             }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "播放速度",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = "设置博客播放的默认速度，可在播放器中临时调整",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "当前速度",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${String.format("%.2f", tempPlaybackSpeed)}x",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        val speedOptions = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+                        Slider(
+                            value = tempPlaybackSpeed,
+                            onValueChange = { tempPlaybackSpeed = it },
+                            valueRange = 0.5f..2.0f,
+                            steps = speedOptions.size - 2,
+                            enabled = !uiState.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            speedOptions.forEach { speed ->
+                                Text(
+                                    text = "${speed}x",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (tempPlaybackSpeed == speed) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    modifier = Modifier.clickable(
+                                        enabled = !uiState.isLoading
+                                    ) {
+                                        tempPlaybackSpeed = speed
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -198,7 +289,8 @@ fun BlogSettingsScreen(
                 Button(
                     onClick = {
                         settingsViewModel.updateMarkPodcastAsRead(tempMarkPodcastAsRead)
-                        settingsViewModel.saveMarkPodcastAsRead()
+                        settingsViewModel.updatePlaybackSpeed(tempPlaybackSpeed)
+                        settingsViewModel.saveBlogSettings()
                         showExitDialog = false
                         navController.navigateUp()
                     }
