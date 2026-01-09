@@ -373,9 +373,32 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 settingsDataStore.saveStyleConfig(currentStyleConfig)
+                settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
                 _uiState.value = _uiState.value.copy(styleConfig = currentStyleConfig)
             } catch (e: Exception) {
                 showMessage("保存样式设置失败：${e.message}")
+            }
+        }
+    }
+
+    fun saveImageCacheEnabled() {
+        viewModelScope.launch {
+            try {
+                settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
+                _uiState.value = _uiState.value.copy(imageCacheEnabled = currentImageCacheEnabled)
+            } catch (e: Exception) {
+                showMessage("保存图片缓存设置失败：${e.message}")
+            }
+        }
+    }
+
+    fun saveMarkPodcastAsRead() {
+        viewModelScope.launch {
+            try {
+                settingsDataStore.saveMarkPodcastAsRead(currentMarkPodcastAsRead)
+                _uiState.value = _uiState.value.copy(markPodcastAsRead = currentMarkPodcastAsRead)
+            } catch (e: Exception) {
+                showMessage("保存博客设置失败：${e.message}")
             }
         }
     }

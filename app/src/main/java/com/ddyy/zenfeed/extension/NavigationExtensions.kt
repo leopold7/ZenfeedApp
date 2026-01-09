@@ -101,6 +101,12 @@ fun NavController.navigateToStyleSettings(
     navigate("styleSettings", builder)
 }
 
+fun NavController.navigateToBlogSettings(
+    builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    navigate("blogSettings", builder)
+}
+
 fun NavController.navigateToLogging(
     builder: NavOptionsBuilder.() -> Unit = {}
 ) {

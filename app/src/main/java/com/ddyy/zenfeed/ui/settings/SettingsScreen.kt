@@ -76,6 +76,7 @@ import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
 import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
 import com.ddyy.zenfeed.extension.navigateToFeedFilterSettings
 import com.ddyy.zenfeed.extension.navigateToStyleSettings
+import com.ddyy.zenfeed.extension.navigateToBlogSettings
 import android.widget.Toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -177,8 +178,6 @@ fun SettingsScreen(
             // 个性化设置卡片
             PersonalizationSettingsCard(
                 homeGroupingMode = uiState.homeGroupingMode,
-                imageCacheEnabled = uiState.imageCacheEnabled,
-                markPodcastAsRead = uiState.markPodcastAsRead,
                 titleFilterKeywords = uiState.titleFilterKeywords,
                 styleConfig = uiState.styleConfig,
                 isLoading = uiState.isLoading,
@@ -187,8 +186,6 @@ fun SettingsScreen(
                     settingsViewModel.updateHomeGroupingMode(it)
                     settingsViewModel.saveHomeGroupingMode()
                 },
-                onImageCacheEnabledChange = settingsViewModel::updateImageCacheEnabled,
-                onMarkPodcastAsReadChange = settingsViewModel::updateMarkPodcastAsRead,
                 onSaveCategoryFilterSettings = settingsViewModel::saveCategoryFilterSettings
             )
             
@@ -840,15 +837,11 @@ private fun UpdateSettingsCard(
 @Composable
 private fun PersonalizationSettingsCard(
     homeGroupingMode: String,
-    imageCacheEnabled: Boolean,
-    markPodcastAsRead: Boolean,
     titleFilterKeywords: String,
     styleConfig: com.ddyy.zenfeed.data.StyleConfig,
     isLoading: Boolean,
     navController: NavController,
     onHomeGroupingModeChange: (String) -> Unit,
-    onImageCacheEnabledChange: (Boolean) -> Unit,
-    onMarkPodcastAsReadChange: (Boolean) -> Unit,
     onSaveCategoryFilterSettings: () -> Unit
 ) {
     Card(
@@ -1052,44 +1045,27 @@ private fun PersonalizationSettingsCard(
                 }
             }
 
-                        // 图片缓存开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            // 博客设置选项
+            Column {
                 Text(
-                    text = "文章显示图片",
-                    style = MaterialTheme.typography.bodyLarge
+                    text = "博客设置",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Switch(
-                    checked = imageCacheEnabled,
-                    onCheckedChange = {
-                        onImageCacheEnabledChange(it)
-                        onSaveCategoryFilterSettings()
-                    },
-                    enabled = !isLoading
-                )
-            }
-            
-            // 听博客自动标记已读开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "听博客自动标记已读",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Switch(
-                    checked = markPodcastAsRead,
-                    onCheckedChange = {
-                        onMarkPodcastAsReadChange(it)
-                        onSaveCategoryFilterSettings()
-                    },
-                    enabled = !isLoading
-                )
+                
+                // 跳转按钮
+                OutlinedButton(
+                    onClick = { navController.navigateToBlogSettings() },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "管理博客设置",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }
