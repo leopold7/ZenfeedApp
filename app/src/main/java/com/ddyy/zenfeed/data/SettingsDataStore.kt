@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -44,6 +45,9 @@ class SettingsDataStore(private val context: Context) {
         // 自动标记博客已读相关的键
         private val MARK_PODCAST_AS_READ_KEY = booleanPreferencesKey("mark_podcast_as_read")
         
+        // 博客倍速播放相关的键
+        private val PERSON_BLOG_PLAYBACK_SPEED_KEY = floatPreferencesKey("person_blog_playback_speed")
+        
         // AI模型配置相关的键
         private val AI_API_URL_KEY = stringPreferencesKey("ai_api_url")
         private val AI_API_KEY_KEY = stringPreferencesKey("ai_api_key")
@@ -81,6 +85,9 @@ class SettingsDataStore(private val context: Context) {
         
         // 默认的自动标记博客已读设置
         const val DEFAULT_MARK_PODCAST_AS_READ = true // 听博客时自动标记为已读
+        
+        // 默认的博客倍速播放设置
+        const val DEFAULT_PLAYBACK_SPEED = 1.0f // 默认1.0倍速
         
         // 默认的AI模型配置
         const val DEFAULT_AI_API_URL = "https://api.openai.com/v1"
@@ -291,6 +298,14 @@ class SettingsDataStore(private val context: Context) {
     val markPodcastAsRead: Flow<Boolean> = context.settingsDataStore.data
         .map { preferences ->
             preferences[MARK_PODCAST_AS_READ_KEY] ?: DEFAULT_MARK_PODCAST_AS_READ
+        }
+
+    /**
+     * 获取博客倍速播放设置的Flow
+     */
+    val playbackSpeed: Flow<Float> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[PERSON_BLOG_PLAYBACK_SPEED_KEY] ?: DEFAULT_PLAYBACK_SPEED
         }
 
     /**
@@ -506,6 +521,16 @@ class SettingsDataStore(private val context: Context) {
     }
 
     /**
+     * 保存博客倍速播放设置
+     * @param speed 播放速度（0.5f - 2.0f）
+     */
+    suspend fun savePlaybackSpeed(speed: Float) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[PERSON_BLOG_PLAYBACK_SPEED_KEY] = speed
+        }
+    }
+
+    /**
      * 保存标签最大显示长度
      * @param length 标签最大显示长度
      */
@@ -579,6 +604,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[CATEGORY_FILTER_CONFIGS_KEY] = ""
             preferences[IMAGE_CACHE_ENABLED_KEY] = DEFAULT_IMAGE_CACHE_ENABLED
             preferences[MARK_PODCAST_AS_READ_KEY] = DEFAULT_MARK_PODCAST_AS_READ
+            preferences[PERSON_BLOG_PLAYBACK_SPEED_KEY] = DEFAULT_PLAYBACK_SPEED
             preferences[AI_API_URL_KEY] = DEFAULT_AI_API_URL
             preferences[AI_API_KEY_KEY] = DEFAULT_AI_API_KEY
             preferences[AI_MODEL_NAME_KEY] = DEFAULT_AI_MODEL_NAME

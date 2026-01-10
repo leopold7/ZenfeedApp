@@ -38,6 +38,7 @@ data class SettingsUiState(
     val aiPrompt: String = "",
     val serverConfigs: List<ServerConfig> = emptyList(),
     val markPodcastAsRead: Boolean = true,
+    val playbackSpeed: Float = 1.0f,
     val titleFilterKeywords: String = "",
     val styleConfig: StyleConfig = StyleConfig(),
     val isLoading: Boolean = false,
@@ -73,6 +74,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentAiModelName = ""
     private var currentAiPrompt = ""
     private var currentMarkPodcastAsRead = true
+    private var currentPlaybackSpeed = 1.0f
     private var currentTitleFilterKeywords = ""
     private var currentStyleConfig = StyleConfig()
 
@@ -111,6 +113,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val aiModelName = settingsDataStore.aiModelName.first()
                 val aiPrompt = settingsDataStore.aiPrompt.first()
                 val markPodcastAsRead = settingsDataStore.markPodcastAsRead.first()
+                val playbackSpeed = settingsDataStore.playbackSpeed.first()
                 val titleFilterKeywords = settingsDataStore.titleFilterKeywords.first()
                 val styleConfig = settingsDataStore.styleConfig.first()
 
@@ -135,6 +138,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     aiModelName = aiModelName,
                     aiPrompt = aiPrompt,
                     markPodcastAsRead = markPodcastAsRead,
+                    playbackSpeed = playbackSpeed,
                     titleFilterKeywords = titleFilterKeywords,
                     styleConfig = styleConfig,
                     isLoading = false
@@ -178,6 +182,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     currentAiPrompt = aiPrompt
                 }
                 currentMarkPodcastAsRead = markPodcastAsRead
+                currentPlaybackSpeed = playbackSpeed
                 currentTitleFilterKeywords = titleFilterKeywords
                 currentStyleConfig = styleConfig
                 currentThemeMode = themeMode
@@ -337,6 +342,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
+     * 更新博客倍速播放设置
+     * @param speed 播放速度（0.5f - 2.0f）
+     */
+    fun updatePlaybackSpeed(speed: Float) {
+        currentPlaybackSpeed = speed
+    }
+
+    /**
      * 更新标题过滤关键词
      * @param keywords 标题过滤关键词
      */
@@ -373,9 +386,50 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 settingsDataStore.saveStyleConfig(currentStyleConfig)
+                settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
                 _uiState.value = _uiState.value.copy(styleConfig = currentStyleConfig)
             } catch (e: Exception) {
                 showMessage("保存样式设置失败：${e.message}")
+            }
+        }
+    }
+
+    fun saveImageCacheEnabled() {
+        viewModelScope.launch {
+            try {
+                settingsDataStore.saveImageCacheEnabled(currentImageCacheEnabled)
+                _uiState.value = _uiState.value.copy(imageCacheEnabled = currentImageCacheEnabled)
+            } catch (e: Exception) {
+                showMessage("保存图片缓存设置失败：${e.message}")
+            }
+        }
+    }
+
+    fun saveMarkPodcastAsRead() {
+        viewModelScope.launch {
+            try {
+                settingsDataStore.saveMarkPodcastAsRead(currentMarkPodcastAsRead)
+                _uiState.value = _uiState.value.copy(markPodcastAsRead = currentMarkPodcastAsRead)
+            } catch (e: Exception) {
+                showMessage("保存博客设置失败：${e.message}")
+            }
+        }
+    }
+
+    /**
+     * 保存博客设置（包含自动已读和倍速设置）
+     */
+    fun saveBlogSettings() {
+        viewModelScope.launch {
+            try {
+                settingsDataStore.saveMarkPodcastAsRead(currentMarkPodcastAsRead)
+                settingsDataStore.savePlaybackSpeed(currentPlaybackSpeed)
+                _uiState.value = _uiState.value.copy(
+                    markPodcastAsRead = currentMarkPodcastAsRead,
+                    playbackSpeed = currentPlaybackSpeed
+                )
+            } catch (e: Exception) {
+                showMessage("保存博客设置失败：${e.message}")
             }
         }
     }
@@ -763,6 +817,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             currentAiModelName = SettingsDataStore.DEFAULT_AI_MODEL_NAME
             currentAiPrompt = SettingsDataStore.DEFAULT_AI_PROMPT
             currentMarkPodcastAsRead = SettingsDataStore.DEFAULT_MARK_PODCAST_AS_READ
+            currentPlaybackSpeed = SettingsDataStore.DEFAULT_PLAYBACK_SPEED
 
             // 刷新API客户端以应用重置的设置
                 ApiClient.refreshApiService(getApplication())

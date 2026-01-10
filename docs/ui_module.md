@@ -92,6 +92,8 @@ NavHost(
 | `MultiServerConfigScreen` | 多服务器配置 | 添加、编辑、删除、排序服务器配置 |
 | `FeedFilterSettingsScreen` | Feed过滤设置 | 设置Feed标题过滤关键词 |
 | `HomeGroupingSettingsScreen` | 首页分组设置 | 分类排序、显示配置、分组管理 |
+| `StyleSettingsScreen` | 样式设置 | 标签最大长度、文章显示图片 |
+| `BlogSettingsScreen` | 博客设置 | 听博客自动标记已读 |
 | `LoggingScreen` | 日志页面 | 展示应用日志、清除日志 |
 | `AboutScreen` | 关于页面 | 应用信息、版本号、开源协议 |
 
@@ -357,6 +359,153 @@ fun HomeGroupingSettingsScreen(
 }
 ```
 
+**StyleSettingsScreen**：
+
+**职责**：
+- 配置应用样式设置
+- 管理标签显示长度
+- 控制文章图片显示
+
+**主要功能**：
+
+| 功能 | 说明 |
+|------|------|
+| 标签最大长度设置 | 设置标签显示的最大字符数 |
+| 文章图片显示 | 控制文章列表中是否显示图片 |
+| 保存配置 | 将配置持久化到本地存储 |
+
+**使用示例**：
+
+```kotlin
+@Composable
+fun StyleSettingsScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    settingsViewModel: SettingsViewModel = viewModel()
+) {
+    val uiState by settingsViewModel.uiState.collectAsState()
+    var tempTagMaxLength by remember { mutableStateOf(uiState.styleConfig.tagMaxLength) }
+    var tempImageCacheEnabled by remember { mutableStateOf(uiState.imageCacheEnabled) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("样式设置") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Card {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    OutlinedTextField(
+                        value = tempTagMaxLength.toString(),
+                        onValueChange = { tempTagMaxLength = it.toIntOrNull() ?: tempTagMaxLength },
+                        label = { Text("标签最大长度") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+            }
+            Card {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("启用文章图片显示")
+                        Switch(
+                            checked = tempImageCacheEnabled,
+                            onCheckedChange = { tempImageCacheEnabled = it }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+**BlogSettingsScreen**：
+
+**职责**：
+- 配置博客相关设置
+- 管理听博客时的自动标记已读功能
+
+**主要功能**：
+
+| 功能 | 说明 |
+|------|------|
+| 自动标记已读 | 听博客时自动将文章标记为已读 |
+| 保存配置 | 将配置持久化到本地存储 |
+
+**使用示例**：
+
+```kotlin
+@Composable
+fun BlogSettingsScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    settingsViewModel: SettingsViewModel = viewModel()
+) {
+    val uiState by settingsViewModel.uiState.collectAsState()
+    var tempMarkPodcastAsRead by remember { mutableStateOf(uiState.markPodcastAsRead) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("博客设置") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Card {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "听博客自动标记已读",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = "听博客时自动将文章标记为已读，方便管理已阅读的文章",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("启用自动标记已读")
+                        Switch(
+                            checked = tempMarkPodcastAsRead,
+                            onCheckedChange = { tempMarkPodcastAsRead = it }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
 ## 3. 导航系统
 
 ### 3.1 导航结构
@@ -374,6 +523,8 @@ fun HomeGroupingSettingsScreen(
 | `multiServerConfig` | `MultiServerConfigScreen` | 多服务器配置页面 |
 | `feedFilterSettings` | `FeedFilterSettingsScreen` | Feed过滤设置页面 |
 | `homeGroupingSettings` | `HomeGroupingSettingsScreen` | 首页分组设置页面 |
+| `styleSettings` | `StyleSettingsScreen` | 样式设置页面 |
+| `blogSettings` | `BlogSettingsScreen` | 博客设置页面 |
 | `logging` | `LoggingScreen` | 日志页面 |
 | `about` | `AboutScreen` | 关于页面 |
 

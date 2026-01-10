@@ -1,6 +1,7 @@
 package com.ddyy.zenfeed.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -76,7 +77,10 @@ import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
 import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
 import com.ddyy.zenfeed.extension.navigateToFeedFilterSettings
 import com.ddyy.zenfeed.extension.navigateToStyleSettings
+import com.ddyy.zenfeed.extension.navigateToBlogSettings
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
@@ -176,20 +180,14 @@ fun SettingsScreen(
             
             // 个性化设置卡片
             PersonalizationSettingsCard(
-                homeGroupingMode = uiState.homeGroupingMode,
-                imageCacheEnabled = uiState.imageCacheEnabled,
-                markPodcastAsRead = uiState.markPodcastAsRead,
                 titleFilterKeywords = uiState.titleFilterKeywords,
-                styleConfig = uiState.styleConfig,
+                homeGroupingMode = uiState.homeGroupingMode,
                 isLoading = uiState.isLoading,
                 navController = navController,
                 onHomeGroupingModeChange = {
                     settingsViewModel.updateHomeGroupingMode(it)
                     settingsViewModel.saveHomeGroupingMode()
-                },
-                onImageCacheEnabledChange = settingsViewModel::updateImageCacheEnabled,
-                onMarkPodcastAsReadChange = settingsViewModel::updateMarkPodcastAsRead,
-                onSaveCategoryFilterSettings = settingsViewModel::saveCategoryFilterSettings
+                }
             )
             
             // 代理设置卡片
@@ -839,17 +837,11 @@ private fun UpdateSettingsCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PersonalizationSettingsCard(
-    homeGroupingMode: String,
-    imageCacheEnabled: Boolean,
-    markPodcastAsRead: Boolean,
     titleFilterKeywords: String,
-    styleConfig: com.ddyy.zenfeed.data.StyleConfig,
+    homeGroupingMode: String,
     isLoading: Boolean,
     navController: NavController,
-    onHomeGroupingModeChange: (String) -> Unit,
-    onImageCacheEnabledChange: (Boolean) -> Unit,
-    onMarkPodcastAsReadChange: (Boolean) -> Unit,
-    onSaveCategoryFilterSettings: () -> Unit
+    onHomeGroupingModeChange: (String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -871,226 +863,99 @@ private fun PersonalizationSettingsCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // 多服务器配置选项
-            Column {
-                Text(
-                    text = "多服务器配置",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                // 跳转按钮
-                OutlinedButton(
-                    onClick = { navController.navigateToMultiServerConfig() },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "管理多服务器配置",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
+            SettingsMenuItem(
+                title = "多服务器配置",
+                onClick = { navController.navigateToMultiServerConfig() },
+                enabled = !isLoading
+            )
 
-            Column {
-                Text(
-                    text = "首页分组模式",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                // 分组模式选择
-                val groupingOptions = mapOf(
-                    "category" to "按分类",
-                    "source" to "按来源",
-                    "category,source" to "先分类后来源",
-                    "none" to "无"
-                )
-                
-                // 当前选中的选项文本
-                val selectedOptionText = groupingOptions[homeGroupingMode] ?: "按分类"
-                
-                // Dialog状态
-                var showDialog by remember { mutableStateOf(false) }
-                
-                // 点击按钮触发Dialog
-                OutlinedButton(
-                    onClick = { showDialog = true && !isLoading },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = selectedOptionText,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-                
-                // 分组模式选择Dialog
-                if (showDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showDialog = false },
-                        title = { Text("选择分组模式") },
-                        text = {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                groupingOptions.forEach { (mode, text) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                onHomeGroupingModeChange(mode)
-                                                showDialog = false
-                                            }
-                                            .padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = text,
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        RadioButton(
-                                            selected = homeGroupingMode == mode,
-                                            onClick = {
-                                                onHomeGroupingModeChange(mode)
-                                                showDialog = false
-                                            },
-                                            enabled = !isLoading
-                                        )
-                                    }
+            val groupingOptions = mapOf(
+                "category" to "按分类",
+                "source" to "按来源",
+                "category,source" to "先分类后来源",
+                "none" to "无"
+            )
+            
+            val selectedOptionText = groupingOptions[homeGroupingMode] ?: "按分类"
+            var showDialog by remember { mutableStateOf(false) }
+            
+            SettingsMenuItem(
+                title = "首页分组模式",
+                onClick = { showDialog = true },
+                enabled = !isLoading,
+                trailingText = selectedOptionText
+            )
+            
+            if (showDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDialog = false },
+                    title = { Text("选择分组模式") },
+                    text = {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            groupingOptions.forEach { (mode, text) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onHomeGroupingModeChange(mode)
+                                            showDialog = false
+                                        }
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = text,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    RadioButton(
+                                        selected = homeGroupingMode == mode,
+                                        onClick = {
+                                            onHomeGroupingModeChange(mode)
+                                            showDialog = false
+                                        },
+                                        enabled = !isLoading
+                                    )
                                 }
                             }
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = { showDialog = false }
-                            ) {
-                                Text("关闭")
-                            }
-                        },
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                }
-            }
-
-            // 首页分组配置 - 只有当分组模式不是"无"时才显示
-            if (homeGroupingMode != "none") {
-                Column {
-                    Text(
-                        text = "首页分组配置",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    
-                    OutlinedButton(
-                        onClick = { navController.navigateToHomeGroupingSettings() },
-                        enabled = !isLoading,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(
-                            text = "管理首页分组配置",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-
-            // 文章过滤选项
-            Column {
-                Text(
-                    text = "文章过滤",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                val currentKeywords = if (titleFilterKeywords.isNotBlank()) {
-                    "已设置文章过滤"
-                } else {
-                    "未设置文章过滤"
-                }
-
-                OutlinedButton(
-                    onClick = { navController.navigateToFeedFilterSettings() },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = currentKeywords,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            // 样式设置选项
-            Column {
-                Text(
-                    text = "样式设置",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                OutlinedButton(
-                    onClick = { navController.navigateToStyleSettings() },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "样式设置",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-                        // 图片缓存开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "文章显示图片",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Switch(
-                    checked = imageCacheEnabled,
-                    onCheckedChange = {
-                        onImageCacheEnabledChange(it)
-                        onSaveCategoryFilterSettings()
+                        }
                     },
-                    enabled = !isLoading
-                )
-            }
-            
-            // 听博客自动标记已读开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "听博客自动标记已读",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Switch(
-                    checked = markPodcastAsRead,
-                    onCheckedChange = {
-                        onMarkPodcastAsReadChange(it)
-                        onSaveCategoryFilterSettings()
+                    confirmButton = {
+                        TextButton(
+                            onClick = { showDialog = false }
+                        ) {
+                            Text("关闭")
+                        }
                     },
-                    enabled = !isLoading
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
+
+            SettingsMenuItem(
+                title = "首页分组配置",
+                onClick = { navController.navigateToHomeGroupingSettings() },
+                enabled = !isLoading && homeGroupingMode != "none"
+            )
+
+            SettingsMenuItem(
+                title = "文章过滤",
+                onClick = { navController.navigateToFeedFilterSettings() },
+                enabled = !isLoading
+            )
+
+            SettingsMenuItem(
+                title = "样式设置",
+                onClick = { navController.navigateToStyleSettings() },
+                enabled = !isLoading
+            )
+
+            SettingsMenuItem(
+                title = "博客设置",
+                onClick = { navController.navigateToBlogSettings() },
+                enabled = !isLoading
+            )
         }
     }
 }

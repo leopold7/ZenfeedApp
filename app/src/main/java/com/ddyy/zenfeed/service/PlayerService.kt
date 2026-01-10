@@ -27,9 +27,11 @@ import com.ddyy.zenfeed.data.FaviconManager
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.FeedRepository
 import com.ddyy.zenfeed.data.PlaylistInfo
+import com.ddyy.zenfeed.data.SettingsDataStore
 import com.ddyy.zenfeed.data.network.ApiClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request
@@ -43,6 +45,7 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
     private val binder = LocalBinder()
     private lateinit var faviconManager: FaviconManager
     private lateinit var feedRepository: FeedRepository
+    private lateinit var settingsDataStore: SettingsDataStore
     private var playlist: List<Feed> = emptyList()
     private var currentTrackIndex = -1
     private var isPrepared = false
@@ -113,6 +116,7 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
         createNotificationChannel()
         faviconManager = FaviconManager(this)
         feedRepository = FeedRepository.getInstance(this)
+        settingsDataStore = SettingsDataStore(this)
         
         // 初始化AudioManager
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -193,6 +197,18 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
         originalPlaylist = feeds
         playlist = feeds
         currentTrackIndex = startIndex
+        
+        // 从设置中读取默认倍速
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                settingsDataStore.playbackSpeed.first().let { speed ->
+                    currentSpeedIndex = findSpeedIndex(speed)
+                    Log.d("PlayerService", "从设置中读取默认倍速: ${speed}x")
+                }
+            } catch (e: Exception) {
+                Log.e("PlayerService", "读取默认倍速失败", e)
+            }
+        }
         
         // 如果是乱序模式，重新生成乱序索引
         if (isShuffleMode) {
@@ -704,7 +720,32 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
             else -> "${speed}x"
         }
     }
-    
+
+    /**
+     * 设置默认播放速度
+     * @param speed 默认播放速度
+     */
+    fun setDefaultPlaybackSpeed(speed: Float) {
+        currentSpeedIndex = findSpeedIndex(speed)
+    }
+
+    /**
+     * 查找速度在列表中的索引
+     */
+    private fun findSpeedIndex(speed: Float): Int {
+        // 找到最接近的速度索引
+        var closestIndex = 1 // 默认1.0x
+        var minDiff = Float.MAX_VALUE
+        playbackSpeeds.forEachIndexed { index, s ->
+            val diff = Math.abs(s - speed)
+            if (diff < minDiff) {
+                minDiff = diff
+                closestIndex = index
+            }
+        }
+        return closestIndex
+    }
+
     /**
      * 应用当前的播放速度到MediaPlayer
      */

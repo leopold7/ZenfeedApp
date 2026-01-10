@@ -63,6 +63,7 @@ import com.ddyy.zenfeed.data.CategoryFilterConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.WindowInsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -236,6 +237,7 @@ fun HomeGroupingSettingsScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         content = { it ->
             Column(
                 modifier = Modifier
@@ -272,77 +274,28 @@ fun HomeGroupingSettingsScreen(
                     }
                 }
                 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            configs.clear()
-                            // 将所有配置的showInAll和showGroup都设置为true，并重置排序（从1开始）
-                            configs.addAll(
-                                categories.mapIndexed { index, category ->
-                                    CategoryFilterConfig(
-                                        categoryName = category,
-                                        showInAll = true,
-                                        showGroup = true,
-                                        sortOrder = index + 1
-                                    )
-                                }
-                            )
-                            scrollToIndex = 0
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = !uiState.isLoading,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.error
+                SettingsBottomButtons(
+                    onReset = {
+                        configs.clear()
+                        configs.addAll(
+                            categories.mapIndexed { index, category ->
+                                CategoryFilterConfig(
+                                    categoryName = category,
+                                    showInAll = true,
+                                    showGroup = true,
+                                    sortOrder = index + 1
+                                )
+                            }
                         )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Restore,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.reset))
-                    }
-                    
-                    Button(
-                        onClick = {
-                            settingsViewModel.updateCategoryFilterConfigs(configs.toList())
-                            settingsViewModel.saveCategoryFilterConfigs()
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = !uiState.isLoading && hasChanges,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Save,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.save))
-                        }
-                    }
-                }
+                        scrollToIndex = 0
+                    },
+                    onSave = {
+                        settingsViewModel.updateCategoryFilterConfigs(configs.toList())
+                        settingsViewModel.saveCategoryFilterConfigs()
+                    },
+                    isLoading = uiState.isLoading,
+                    hasChanges = hasChanges
+                )
             }
         }
     )

@@ -19,6 +19,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.PlaylistInfo
+import com.ddyy.zenfeed.data.SettingsDataStore
 import com.ddyy.zenfeed.service.PlayerService
 
 class PlayerViewModel : ViewModel() {
@@ -257,7 +258,7 @@ class PlayerViewModel : ViewModel() {
             Log.e("PlayerViewModel", "切换倍速播放时出错", e)
         }
     }
-    
+
     /**
      * 切换定时停止
      */

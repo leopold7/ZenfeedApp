@@ -44,6 +44,7 @@ import com.ddyy.zenfeed.ui.settings.MultiServerConfigScreen
 import com.ddyy.zenfeed.ui.settings.HomeGroupingSettingsScreen
 import com.ddyy.zenfeed.ui.settings.FeedFilterSettingsScreen
 import com.ddyy.zenfeed.ui.settings.StyleSettingsScreen
+import com.ddyy.zenfeed.ui.settings.BlogSettingsScreen
 import com.ddyy.zenfeed.ui.webview.WebViewScreen
 import com.ddyy.zenfeed.extension.defaultEnterTransition
 import com.ddyy.zenfeed.extension.defaultExitTransition
@@ -434,6 +435,17 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         ) {
             val settingsViewModel = viewModel<SettingsViewModel>()
             StyleSettingsScreen(
+                navController = navController,
+                settingsViewModel = settingsViewModel
+            )
+        }
+        composable(
+            "blogSettings",
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
+        ) {
+            val settingsViewModel = viewModel<SettingsViewModel>()
+            BlogSettingsScreen(
                 navController = navController,
                 settingsViewModel = settingsViewModel
             )
