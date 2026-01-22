@@ -43,6 +43,7 @@ import com.ddyy.zenfeed.ui.settings.SettingsViewModel
 import com.ddyy.zenfeed.ui.settings.MultiServerConfigScreen
 import com.ddyy.zenfeed.ui.settings.HomeGroupingSettingsScreen
 import com.ddyy.zenfeed.ui.settings.FeedFilterSettingsScreen
+import com.ddyy.zenfeed.ui.settings.ThemeSettingsScreen
 import com.ddyy.zenfeed.ui.settings.StyleSettingsScreen
 import com.ddyy.zenfeed.ui.settings.BlogSettingsScreen
 import com.ddyy.zenfeed.ui.webview.WebViewScreen
@@ -58,6 +59,7 @@ import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
 import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
 import com.ddyy.zenfeed.extension.navigateToFeedDetail
 import com.ddyy.zenfeed.extension.navigateToStyleSettings
+import com.ddyy.zenfeed.extension.navigateToThemeSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -74,6 +76,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
     
     // 监听主题模式变化
     val currentThemeMode by settingsDataStore.themeMode.collectAsState(initial = "system")
+    val currentThemeColorId by settingsDataStore.themeColor.collectAsState(initial = SettingsDataStore.DEFAULT_THEME_COLOR)
     
     // 监听代理启用状态
     val isProxyEnabled by settingsDataStore.proxyEnabled.collectAsState(initial = false)
@@ -181,18 +184,8 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 playerViewModel = playerViewModel,
                 sharedViewModel = sharedViewModel,
                 currentThemeMode = currentThemeMode,
-                onThemeToggle = {
-                    // 循环切换主题：system -> light -> dark -> system
-                    val nextTheme = when (currentThemeMode) {
-                        "system" -> "light"
-                        "light" -> "dark"
-                        "dark" -> "system"
-                        else -> "system"
-                    }
-                    coroutineScope.launch {
-                        settingsDataStore.saveThemeMode(nextTheme)
-                    }
-                },
+                currentThemeColorId = currentThemeColorId,
+                onThemeSettingsClick = { navController.navigateToThemeSettings() },
                 isProxyEnabled = isProxyEnabled,
                 onProxyToggle = {
                     // 切换代理启用状态
@@ -438,6 +431,13 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 navController = navController,
                 settingsViewModel = settingsViewModel
             )
+        }
+        composable(
+            "themeSettings",
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
+        ) {
+            ThemeSettingsScreen(navController = navController)
         }
         composable(
             "blogSettings",

@@ -113,7 +113,8 @@ fun FeedsScreen(
     playerViewModel: PlayerViewModel? = null,
     sharedViewModel: com.ddyy.zenfeed.ui.SharedViewModel? = null,
     currentThemeMode: String = "system",
-    onThemeToggle: () -> Unit = {},
+    currentThemeColorId: String = "default",
+    onThemeSettingsClick: () -> Unit = {},
     isProxyEnabled: Boolean = false,
     onProxyToggle: () -> Unit = {},
 ) {
@@ -169,7 +170,8 @@ fun FeedsScreen(
         scrollPositions = feedsViewModel.scrollPositions,
         sharedViewModel = sharedViewModel,
         currentThemeMode = currentThemeMode,
-        onThemeToggle = onThemeToggle,
+        currentThemeColorId = currentThemeColorId,
+        onThemeSettingsClick = onThemeSettingsClick,
         isProxyEnabled = isProxyEnabled,
         onProxyToggle = onProxyToggle,
         onTimeRangeSelected = { hours -> feedsViewModel.selectTimeRange(hours) },
@@ -224,12 +226,13 @@ fun FeedsScreenContent(
     modifier: Modifier = Modifier,
     sharedViewModel: com.ddyy.zenfeed.ui.SharedViewModel? = null,
     currentThemeMode: String = "system",
-    onThemeToggle: () -> Unit = {},
+    currentThemeColorId: String = "default",
+    onThemeSettingsClick: () -> Unit = {},
     isProxyEnabled: Boolean = false,
     onProxyToggle: () -> Unit = {},
     onTimeRangeSelected: (Int) -> Unit,
     searchQuery: String,
-    onSearchQueryChanged: (String) -> Unit,
+    onSearchQueryChanged: (String) -> Unit = {},
     searchHistory: List<String> = emptyList(),
     onSearchHistoryClick: (String) -> Unit = {},
     onClearSearchHistory: () -> Unit = {},
@@ -421,7 +424,13 @@ fun FeedsScreenContent(
                     onAboutClick()
                 },
                 currentThemeMode = currentThemeMode,
-                onThemeToggle = onThemeToggle,
+                currentThemeColorId = currentThemeColorId,
+                onThemeSettingsClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    onThemeSettingsClick()
+                },
                 isProxyEnabled = isProxyEnabled,
                 onProxyToggle = onProxyToggle,
                 cacheSize = cacheSize,

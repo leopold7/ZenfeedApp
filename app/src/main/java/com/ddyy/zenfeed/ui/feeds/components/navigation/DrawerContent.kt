@@ -40,7 +40,8 @@ fun DrawerContent(
     onLoggingClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
     currentThemeMode: String = "system",
-    onThemeToggle: () -> Unit = {},
+    currentThemeColorId: String = "default",
+    onThemeSettingsClick: () -> Unit = {},
     isProxyEnabled: Boolean = false,
     onProxyToggle: () -> Unit = {},
     cacheSize: String = "0.00 MB",
@@ -91,12 +92,12 @@ fun DrawerContent(
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // 主题切换菜单项
+            val themeSubtitle = "${getThemeModeDescription(currentThemeMode)} · ${getThemeColorName(currentThemeColorId)}"
             MenuItemCard(
                 icon = getThemeModeIcon(currentThemeMode),
-                title = "主题模式",
-                subtitle = getThemeModeDescription(currentThemeMode),
-                onClick = onThemeToggle
+                title = "主题设置",
+                subtitle = themeSubtitle,
+                onClick = onThemeSettingsClick
             )
 
             // 代理切换菜单项
@@ -149,5 +150,22 @@ fun DrawerContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
+    }
+}
+
+private fun getThemeColorName(themeColorId: String): String {
+    return when (themeColorId) {
+        "default" -> "Teal"
+        "teal" -> "Teal"
+        "blue" -> "Blue"
+        "indigo" -> "Indigo"
+        "purple" -> "Purple"
+        "pink" -> "Pink"
+        "red" -> "Red"
+        "orange" -> "Orange"
+        "amber" -> "Amber"
+        "green" -> "Green"
+        "cyan" -> "Cyan"
+        else -> "默认"
     }
 }

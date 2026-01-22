@@ -35,6 +35,7 @@ class SettingsDataStore(private val context: Context) {
         private val PROXY_USERNAME_KEY = stringPreferencesKey("proxy_username")
         private val PROXY_PASSWORD_KEY = stringPreferencesKey("proxy_password")
         private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+        private val PERSON_THEME_COLOR_KEY = stringPreferencesKey("person_theme_color")
         private val CHECK_UPDATE_ON_START_KEY = booleanPreferencesKey("check_update_on_start")
         private val UPDATE_BRANCH_KEY = stringPreferencesKey("update_branch")
         private val HOME_GROUPING_MODE_KEY = stringPreferencesKey("home_grouping_mode")
@@ -75,6 +76,7 @@ class SettingsDataStore(private val context: Context) {
 
         // 默认的主题设置
         const val DEFAULT_THEME_MODE = "system" // 可以是 "light", "dark", "system"
+        const val DEFAULT_THEME_COLOR = "teal"
         const val DEFAULT_CHECK_UPDATE_ON_START = true
         const val DEFAULT_UPDATE_BRANCH = "master" // 可以是 "master", "dev"
         
@@ -180,6 +182,15 @@ class SettingsDataStore(private val context: Context) {
         val themeMode: Flow<String> = context.settingsDataStore.data
             .map { preferences ->
                 preferences[THEME_MODE_KEY] ?: DEFAULT_THEME_MODE
+            }
+
+        /**
+         * 获取主题色的Flow
+         */
+        val themeColor: Flow<String> = context.settingsDataStore.data
+            .map { preferences ->
+                val color = preferences[PERSON_THEME_COLOR_KEY] ?: DEFAULT_THEME_COLOR
+                if (color == "default") DEFAULT_THEME_COLOR else color
             }
         
     /**
@@ -381,6 +392,16 @@ class SettingsDataStore(private val context: Context) {
     suspend fun saveThemeMode(mode: String) {
         context.settingsDataStore.edit { preferences ->
             preferences[THEME_MODE_KEY] = mode
+        }
+    }
+
+    /**
+     * 保存主题色设置
+     * @param colorId 主题色ID
+     */
+    suspend fun saveThemeColor(colorId: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[PERSON_THEME_COLOR_KEY] = colorId
         }
     }
     
@@ -598,6 +619,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[PROXY_USERNAME_KEY] = DEFAULT_PROXY_USERNAME
             preferences[PROXY_PASSWORD_KEY] = DEFAULT_PROXY_PASSWORD
             preferences[THEME_MODE_KEY] = DEFAULT_THEME_MODE
+            preferences[PERSON_THEME_COLOR_KEY] = DEFAULT_THEME_COLOR
             preferences[CHECK_UPDATE_ON_START_KEY] = DEFAULT_CHECK_UPDATE_ON_START
             preferences[UPDATE_BRANCH_KEY] = DEFAULT_UPDATE_BRANCH
             preferences[HOME_GROUPING_MODE_KEY] = DEFAULT_HOME_GROUPING_MODE
