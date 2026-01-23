@@ -95,6 +95,7 @@ NavHost(
 | `HomeGroupingSettingsScreen` | 首页分组设置 | 分类排序、显示配置、分组管理 |
 | `StyleSettingsScreen` | 样式设置 | 标签最大长度、文章显示图片 |
 | `BlogSettingsScreen` | 博客设置 | 听博客自动标记已读 |
+| `FavoriteFeedsScreen` | 我的收藏 | 收藏文章列表、一键清空、支持播客播放 |
 | `LoggingScreen` | 日志页面 | 展示应用日志、清除日志 |
 | `AboutScreen` | 关于页面 | 应用信息、版本号、开源协议 |
 
@@ -522,6 +523,9 @@ fun BlogSettingsScreen(
 | `blogSettings` | `BlogSettingsScreen` | 博客设置页面 |
 | `logging` | `LoggingScreen` | 日志页面 |
 | `about` | `AboutScreen` | 关于页面 |
+
+**快捷入口**：
+- “我的收藏”通过首页左上角抽屉菜单（Drawer）进入；点击后会选中主页分类中的“我的收藏”（仅在存在收藏时显示），并位于分类列表最后。
 
 ### 3.2 导航动画
 

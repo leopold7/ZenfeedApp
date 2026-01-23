@@ -258,6 +258,31 @@ updateManager.startDownload(
 updateManager.installApk(downloadId)
 ```
 
+### 2.6 FavoritesRepository
+
+**职责**：
+- 管理“我的收藏”文章的本地持久化
+- 记录收藏时间，用于按收藏时间倒序排序
+- 提供一键清空与收藏状态判断
+
+**实现要点**：
+- 使用独立的SharedPreferences文件保存，避免被主页“清理缓存”影响
+- 收藏条目包含：`feedId` + `favoritedAt` + `Feed`序列化数据
+
+### 2.7 BlogOfflineAudioCache
+
+**职责**：
+- 管理“收藏博客后自动下载至本地”的离线音频缓存
+- 统计离线缓存占用空间，并支持单独一键清空
+
+**实现要点**：
+- 离线音频存放在 `filesDir` 下的独立目录，不计入主页缓存统计，也不会被主页清理缓存清除
+- 文件名基于 `podcastUrl + serverId` 的hash，避免非法文件名与冲突
+ 
+**使用场景**：
+- 收藏文章且开启自动下载：下载离线音频
+- 播放时优先使用离线文件，不存在则回退到原URL下载播放
+
 ## 3. 数据流程
 
 ### 3.1 Feed数据获取流程
