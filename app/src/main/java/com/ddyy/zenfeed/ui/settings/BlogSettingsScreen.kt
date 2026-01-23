@@ -1,5 +1,6 @@
 package com.ddyy.zenfeed.ui.settings
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,11 +54,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ddyy.zenfeed.R
 import com.ddyy.zenfeed.data.SettingsDataStore
+import com.ddyy.zenfeed.data.BlogOfflineAudioCache
+import com.ddyy.zenfeed.data.FavoritesRepository
 import com.ddyy.zenfeed.ui.theme.ZenfeedTheme
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlogSettingsScreen(
@@ -71,8 +79,18 @@ fun BlogSettingsScreen(
     val scrollState = rememberScrollState()
     var tempMarkPodcastAsRead by remember(uiState.markPodcastAsRead) { mutableStateOf(uiState.markPodcastAsRead) }
     var tempPlaybackSpeed by remember(uiState.playbackSpeed) { mutableStateOf(uiState.playbackSpeed) }
-    val hasChanges = tempMarkPodcastAsRead != uiState.markPodcastAsRead || tempPlaybackSpeed != uiState.playbackSpeed
+    var tempBlogAutoDownloadToLocal by remember(uiState.blogAutoDownloadToLocal) { mutableStateOf(uiState.blogAutoDownloadToLocal) }
+    val hasChanges = tempMarkPodcastAsRead != uiState.markPodcastAsRead ||
+        tempPlaybackSpeed != uiState.playbackSpeed ||
+        tempBlogAutoDownloadToLocal != uiState.blogAutoDownloadToLocal
     var showExitDialog by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val offlineAudioCache = remember { BlogOfflineAudioCache(context) }
+    var offlineCacheSizeBytes by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(Unit) {
+        offlineCacheSizeBytes = withContext(Dispatchers.IO) { offlineAudioCache.getCacheSizeBytes() }
+    }
 
     LaunchedEffect(uiState.message) {
         if (uiState.message.isNotEmpty()) {
@@ -116,10 +134,12 @@ fun BlogSettingsScreen(
                     onReset = {
                         tempMarkPodcastAsRead = SettingsDataStore.DEFAULT_MARK_PODCAST_AS_READ
                         tempPlaybackSpeed = SettingsDataStore.DEFAULT_PLAYBACK_SPEED
+                        tempBlogAutoDownloadToLocal = SettingsDataStore.DEFAULT_BLOG_AUTO_DOWNLOAD_TO_LOCAL
                     },
                     onSave = {
                         settingsViewModel.updateMarkPodcastAsRead(tempMarkPodcastAsRead)
                         settingsViewModel.updatePlaybackSpeed(tempPlaybackSpeed)
+                        settingsViewModel.updateBlogAutoDownloadToLocal(tempBlogAutoDownloadToLocal)
                         settingsViewModel.saveBlogSettings()
                         Toast.makeText(context, "保存成功", Toast.LENGTH_SHORT).show()
                     },
@@ -269,6 +289,79 @@ fun BlogSettingsScreen(
                     }
                 }
             }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "离线下载",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = "收藏博客后自动下载至本地，便于离线收听",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "启用自动下载",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Switch(
+                            checked = tempBlogAutoDownloadToLocal,
+                            onCheckedChange = { tempBlogAutoDownloadToLocal = it },
+                            enabled = !uiState.isLoading
+                        )
+                    }
+
+                    Text(
+                        text = "离线缓存占用：${formatCacheSize(offlineCacheSizeBytes)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    offlineAudioCache.clearCache()
+                                    FavoritesRepository.getInstance(context).clearAllLocalPodcastPaths()
+                                }
+                                offlineCacheSizeBytes = withContext(Dispatchers.IO) { offlineAudioCache.getCacheSizeBytes() }
+                                Toast.makeText(context, "离线缓存已清空", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = offlineCacheSizeBytes > 0 && !uiState.isLoading,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("一键清空离线缓存")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -309,5 +402,18 @@ fun BlogSettingsScreen(
                 }
             }
         )
+    }
+}
+
+@SuppressLint("DefaultLocale")
+private fun formatCacheSize(bytes: Long): String {
+    val kb = bytes / 1024.0
+    val mb = kb / 1024.0
+    val gb = mb / 1024.0
+    return when {
+        gb >= 1 -> String.format("%.2f GB", gb)
+        mb >= 1 -> String.format("%.2f MB", mb)
+        kb >= 1 -> String.format("%.2f KB", kb)
+        else -> String.format("%d B", bytes)
     }
 }

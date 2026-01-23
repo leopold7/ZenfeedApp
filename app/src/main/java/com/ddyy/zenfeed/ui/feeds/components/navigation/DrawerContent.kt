@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
@@ -39,8 +40,11 @@ fun DrawerContent(
     modifier: Modifier = Modifier,
     onLoggingClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
+    onFavoriteFeedsClick: () -> Unit = {},
+    showFavoriteFeeds: Boolean = false,
     currentThemeMode: String = "system",
-    onThemeToggle: () -> Unit = {},
+    currentThemeColorId: String = "default",
+    onThemeSettingsClick: () -> Unit = {},
     isProxyEnabled: Boolean = false,
     onProxyToggle: () -> Unit = {},
     cacheSize: String = "0.00 MB",
@@ -91,13 +95,22 @@ fun DrawerContent(
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // 主题切换菜单项
+            val themeSubtitle = "${getThemeModeDescription(currentThemeMode)} · ${getThemeColorName(currentThemeColorId)}"
             MenuItemCard(
                 icon = getThemeModeIcon(currentThemeMode),
-                title = "主题模式",
-                subtitle = getThemeModeDescription(currentThemeMode),
-                onClick = onThemeToggle
+                title = "主题设置",
+                subtitle = themeSubtitle,
+                onClick = onThemeSettingsClick
             )
+
+            if (showFavoriteFeeds) {
+                MenuItemCard(
+                    icon = Icons.Default.Star,
+                    title = "我的收藏",
+                    subtitle = "查看我收藏的文章",
+                    onClick = onFavoriteFeedsClick
+                )
+            }
 
             // 代理切换菜单项
             MenuItemCard(
@@ -149,5 +162,22 @@ fun DrawerContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
+    }
+}
+
+private fun getThemeColorName(themeColorId: String): String {
+    return when (themeColorId) {
+        "default" -> "Teal"
+        "teal" -> "Teal"
+        "blue" -> "Blue"
+        "indigo" -> "Indigo"
+        "purple" -> "Purple"
+        "pink" -> "Pink"
+        "red" -> "Red"
+        "orange" -> "Orange"
+        "amber" -> "Amber"
+        "green" -> "Green"
+        "cyan" -> "Cyan"
+        else -> "默认"
     }
 }

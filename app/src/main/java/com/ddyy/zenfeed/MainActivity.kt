@@ -38,7 +38,10 @@ class MainActivity : ComponentActivity() {
             // 获取主题控制器
             val themeController = rememberThemeController(settingsDataStore)
             
-            ZenfeedTheme(darkTheme = themeController.useDarkTheme) {
+            ZenfeedTheme(
+                darkTheme = themeController.useDarkTheme,
+                themeColorId = themeController.currentThemeColor
+            ) {
                 AppNavigation(sharedViewModel = sharedViewModel)
             }
         }

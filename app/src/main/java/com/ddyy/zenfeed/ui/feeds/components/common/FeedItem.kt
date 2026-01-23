@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -183,6 +184,39 @@ fun FeedItem(
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
+
+                        if (styleConfig.showPodcastCacheBadge && hasValidPodcast) {
+                            val localPath = feed.labels.localPodcastPath.orEmpty()
+                            val hasLocal = remember(localPath) {
+                                if (localPath.isBlank()) {
+                                    false
+                                } else {
+                                    try {
+                                        val file = java.io.File(localPath)
+                                        file.exists() && file.length() > 0
+                                    } catch (_: Exception) {
+                                        false
+                                    }
+                                }
+                            }
+                            if (hasLocal) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                ) {
+                                    Text(
+                                        text = "已缓存",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))

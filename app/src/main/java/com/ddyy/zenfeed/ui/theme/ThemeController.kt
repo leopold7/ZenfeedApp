@@ -10,8 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import com.ddyy.zenfeed.data.SettingsDataStore
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 
 /**
@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.collectLatest
 class ThemeController(private val settingsDataStore: SettingsDataStore) {
     // 当前主题模式
     var currentThemeMode by mutableStateOf(SettingsDataStore.DEFAULT_THEME_MODE)
+        private set
+
+    var currentThemeColor by mutableStateOf(SettingsDataStore.DEFAULT_THEME_COLOR)
         private set
     
     // 是否使用暗色主题
@@ -30,9 +33,18 @@ class ThemeController(private val settingsDataStore: SettingsDataStore) {
      * 初始化主题控制器
      */
     suspend fun initialize() {
-        settingsDataStore.themeMode.collectLatest { mode ->
-            currentThemeMode = mode
-        }
+        settingsDataStore.themeMode
+            .combine(settingsDataStore.themeColor) { mode, color ->
+                mode to color
+            }
+            .collectLatest { (mode, color) ->
+                currentThemeMode = mode
+                currentThemeColor = color
+            }
+    }
+    
+    fun updateThemeColor(colorId: String) {
+        currentThemeColor = colorId
     }
     
     /**
@@ -52,6 +64,10 @@ class ThemeController(private val settingsDataStore: SettingsDataStore) {
     suspend fun saveThemeMode(mode: String) {
         settingsDataStore.saveThemeMode(mode)
     }
+
+    suspend fun saveThemeColor(colorId: String) {
+        settingsDataStore.saveThemeColor(colorId)
+    }
 }
 
 /**
@@ -59,7 +75,6 @@ class ThemeController(private val settingsDataStore: SettingsDataStore) {
  */
 @Composable
 fun rememberThemeController(settingsDataStore: SettingsDataStore): ThemeController {
-    val context = LocalContext.current
     val themeController = remember { ThemeController(settingsDataStore) }
     
     // 监听系统主题变化

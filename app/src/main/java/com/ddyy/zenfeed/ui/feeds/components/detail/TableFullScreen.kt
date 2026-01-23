@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -18,11 +19,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import com.ddyy.zenfeed.extension.getThemeBackgroundColor
 import com.ddyy.zenfeed.extension.toColorInt
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +35,11 @@ fun TableFullScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val onBackgroundColor = MaterialTheme.colorScheme.onBackground
+    val backgroundColorInt = if (isDarkTheme) "#1E1E1E".toColorInt() else backgroundColor.toArgb()
+    val backgroundHex = backgroundColor.toHexColor()
+    val onBackgroundHex = onBackgroundColor.toHexColor()
     
     // 进入时设置为横屏
     DisposableEffect(Unit) {
@@ -86,7 +93,7 @@ fun TableFullScreen(
                     settings.useWideViewPort = true
                     settings.loadWithOverviewMode = true
                     
-                    setBackgroundColor(getThemeBackgroundColor(isDarkTheme))
+                    setBackgroundColor(backgroundColorInt)
                     
                     // 为表格添加样式，使其更适合全屏显示
                     val styledHtml = """
@@ -100,13 +107,13 @@ fun TableFullScreen(
                                     margin: 0;
                                     padding: 16px;
                                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                                    background-color: ${if (isDarkTheme) "#1E1E1E" else "#FFFFFF"};
-                                    color: ${if (isDarkTheme) "#E0E0E0" else "#000000"};
+                                    background-color: $backgroundHex;
+                                    color: $onBackgroundHex;
                                 }
                                 table {
                                     border-collapse: collapse;
                                     margin: 0;
-                                    color: ${if (isDarkTheme) "#E0E0E0" else "#000000"};
+                                    color: $onBackgroundHex;
                                 }
                                 th, td {
                                     border: 1px solid ${if (isDarkTheme) "#444444" else "#CCCCCC"};
@@ -114,17 +121,17 @@ fun TableFullScreen(
                                     text-align: left;
                                     word-wrap: break-word;
                                     min-width: 80px;
-                                    color: ${if (isDarkTheme) "#E0E0E0" else "#000000"} !important;
+                                    color: $onBackgroundHex !important;
                                     background-color: inherit !important;
                                 }
                                 th {
                                     background-color: ${if (isDarkTheme) "#2D2D2D" else "#F5F5F5"} !important;
                                     font-weight: bold;
-                                    color: ${if (isDarkTheme) "#FFFFFF" else "#000000"} !important;
+                                    color: $onBackgroundHex !important;
                                 }
                                 /* 确保表格内部所有元素都使用正确的颜色 */
                                 table * {
-                                    color: ${if (isDarkTheme) "#E0E0E0" else "#000000"} !important;
+                                    color: $onBackgroundHex !important;
                                     background-color: inherit !important;
                                 }
                                 img {
@@ -140,16 +147,70 @@ fun TableFullScreen(
                     """.trimIndent()
                     
                     loadDataWithBaseURL(null, styledHtml, "text/html", "UTF-8", null)
+                    tag = styledHtml
                 }
             },
             update = { webView ->
-                webView.setBackgroundColor(
-                    if (isDarkTheme)
-                        "#1E1E1E".toColorInt()
-                    else
-                        "#FFFFFF".toColorInt()
-                )
+                webView.setBackgroundColor(backgroundColorInt)
+                val styledHtml = """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width">
+                            <style>
+                                body {
+                                    margin: 0;
+                                    padding: 16px;
+                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                    background-color: $backgroundHex;
+                                    color: $onBackgroundHex;
+                                }
+                                table {
+                                    border-collapse: collapse;
+                                    margin: 0;
+                                    color: $onBackgroundHex;
+                                }
+                                th, td {
+                                    border: 1px solid ${if (isDarkTheme) "#444444" else "#CCCCCC"};
+                                    padding: 8px;
+                                    text-align: left;
+                                    word-wrap: break-word;
+                                    min-width: 80px;
+                                    color: $onBackgroundHex !important;
+                                    background-color: inherit !important;
+                                }
+                                th {
+                                    background-color: ${if (isDarkTheme) "#2D2D2D" else "#F5F5F5"} !important;
+                                    font-weight: bold;
+                                    color: $onBackgroundHex !important;
+                                }
+                                table * {
+                                    color: $onBackgroundHex !important;
+                                    background-color: inherit !important;
+                                }
+                                img {
+                                    max-width: 100%;
+                                    height: auto;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            $tableHtml
+                        </body>
+                        </html>
+                    """.trimIndent()
+                if (webView.tag != styledHtml) {
+                    webView.loadDataWithBaseURL(null, styledHtml, "text/html", "UTF-8", null)
+                    webView.tag = styledHtml
+                }
             }
         )
     }
+}
+
+private fun androidx.compose.ui.graphics.Color.toHexColor(): String {
+    val argb = toArgb()
+    val rgb = argb and 0x00FFFFFF
+    return String.format(Locale.US, "#%06X", rgb)
 }

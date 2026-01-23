@@ -2,13 +2,15 @@ package com.ddyy.zenfeed.ui.feeds.components.detail
 
 import android.webkit.WebView
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.graphics.toColorInt
-import com.ddyy.zenfeed.extension.getThemeBackgroundColor
 import com.ddyy.zenfeed.extension.toThemedHtml
+import com.ddyy.zenfeed.extension.toColorInt
+import java.util.Locale
 
 @Composable
 fun HtmlText(
@@ -31,6 +33,14 @@ fun HtmlText(
         addTableZoomButtons(processedHtml, isDarkTheme, onTableClick)
     }
 
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val onBackgroundColor = MaterialTheme.colorScheme.onBackground
+    val linkColor = MaterialTheme.colorScheme.primary
+    val backgroundHex = backgroundColor.toHexColor()
+    val onBackgroundHex = onBackgroundColor.toHexColor()
+    val linkHex = linkColor.toHexColor()
+    val backgroundColorInt = if (isDarkTheme) "#1E1E1E".toColorInt() else backgroundColor.toArgb()
+
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -40,12 +50,18 @@ fun HtmlText(
                 settings.domStorageEnabled = true
 
                 // 根据系统主题设置WebView背景色
-                setBackgroundColor(getThemeBackgroundColor(isDarkTheme))
+                setBackgroundColor(backgroundColorInt)
 
                 // 根据主题调整HTML内容
-                val themedHtml = enhancedHtml.toThemedHtml(isDarkTheme)
+                val themedHtml = enhancedHtml.toThemedHtml(
+                    isDarkTheme = isDarkTheme,
+                    backgroundColor = backgroundHex,
+                    textColor = onBackgroundHex,
+                    linkColor = linkHex
+                )
 
                 loadDataWithBaseURL(null, themedHtml, "text/html", "UTF-8", null)
+                tag = themedHtml
                 
                 // 添加JavaScript接口处理表格点击
                 addJavascriptInterface(object {
@@ -58,14 +74,25 @@ fun HtmlText(
         },
         update = { webView ->
             // 当主题变化时更新WebView
-            webView.setBackgroundColor(
-                if (isDarkTheme)
-                    "#1E1E1E".toColorInt()
-                else
-                    "#FFFFFF".toColorInt()
+            webView.setBackgroundColor(backgroundColorInt)
+            val themedHtml = enhancedHtml.toThemedHtml(
+                isDarkTheme = isDarkTheme,
+                backgroundColor = backgroundHex,
+                textColor = onBackgroundHex,
+                linkColor = linkHex
             )
+            if (webView.tag != themedHtml) {
+                webView.loadDataWithBaseURL(null, themedHtml, "text/html", "UTF-8", null)
+                webView.tag = themedHtml
+            }
         }
     )
+}
+
+private fun androidx.compose.ui.graphics.Color.toHexColor(): String {
+    val argb = toArgb()
+    val rgb = argb and 0x00FFFFFF
+    return String.format(Locale.US, "#%06X", rgb)
 }
 
 private fun addTableZoomButtons(html: String, isDarkTheme: Boolean, onTableClick: (String) -> Unit): String {

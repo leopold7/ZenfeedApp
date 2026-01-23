@@ -30,6 +30,9 @@ import com.ddyy.zenfeed.data.SettingsDataStore
 import com.ddyy.zenfeed.ui.SharedViewModel
 import com.ddyy.zenfeed.ui.UpdateManager
 import com.ddyy.zenfeed.ui.about.AboutScreen
+import com.ddyy.zenfeed.ui.favorites.FavoriteFeedsScreen
+import com.ddyy.zenfeed.ui.favorites.FavoritesViewModel
+import com.ddyy.zenfeed.ui.favorites.FAVORITES_CATEGORY
 import com.ddyy.zenfeed.ui.feeds.FeedDetailScreen
 import com.ddyy.zenfeed.ui.feeds.FeedsScreen
 import com.ddyy.zenfeed.ui.feeds.FeedsUiState
@@ -43,6 +46,7 @@ import com.ddyy.zenfeed.ui.settings.SettingsViewModel
 import com.ddyy.zenfeed.ui.settings.MultiServerConfigScreen
 import com.ddyy.zenfeed.ui.settings.HomeGroupingSettingsScreen
 import com.ddyy.zenfeed.ui.settings.FeedFilterSettingsScreen
+import com.ddyy.zenfeed.ui.settings.ThemeSettingsScreen
 import com.ddyy.zenfeed.ui.settings.StyleSettingsScreen
 import com.ddyy.zenfeed.ui.settings.BlogSettingsScreen
 import com.ddyy.zenfeed.ui.webview.WebViewScreen
@@ -58,6 +62,7 @@ import com.ddyy.zenfeed.extension.navigateToMultiServerConfig
 import com.ddyy.zenfeed.extension.navigateToHomeGroupingSettings
 import com.ddyy.zenfeed.extension.navigateToFeedDetail
 import com.ddyy.zenfeed.extension.navigateToStyleSettings
+import com.ddyy.zenfeed.extension.navigateToThemeSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -66,6 +71,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = viewModel()
     val feedsViewModel: FeedsViewModel = viewModel() // 共享的FeedsViewModel
+    val favoritesViewModel: FavoritesViewModel = viewModel()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
@@ -74,6 +80,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
     
     // 监听主题模式变化
     val currentThemeMode by settingsDataStore.themeMode.collectAsState(initial = "system")
+    val currentThemeColorId by settingsDataStore.themeColor.collectAsState(initial = SettingsDataStore.DEFAULT_THEME_COLOR)
     
     // 监听代理启用状态
     val isProxyEnabled by settingsDataStore.proxyEnabled.collectAsState(initial = false)
@@ -138,7 +145,9 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 onFeedClick = { feed ->
                     // 先保存当前的feeds列表到SharedViewModel
                     val currentFeedsState = feedsViewModel.feedsUiState
-                    if (currentFeedsState is FeedsUiState.Success) {
+                    if (feedsViewModel.selectedCategory == FAVORITES_CATEGORY) {
+                        sharedViewModel.updateAllFeeds(favoritesViewModel.favoriteFeeds)
+                    } else if (currentFeedsState is FeedsUiState.Success) {
                         sharedViewModel.updateAllFeeds(currentFeedsState.feeds)
                     }
                     // 记录进入详情页时的分类
@@ -181,18 +190,10 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 playerViewModel = playerViewModel,
                 sharedViewModel = sharedViewModel,
                 currentThemeMode = currentThemeMode,
-                onThemeToggle = {
-                    // 循环切换主题：system -> light -> dark -> system
-                    val nextTheme = when (currentThemeMode) {
-                        "system" -> "light"
-                        "light" -> "dark"
-                        "dark" -> "system"
-                        else -> "system"
-                    }
-                    coroutineScope.launch {
-                        settingsDataStore.saveThemeMode(nextTheme)
-                    }
-                },
+                currentThemeColorId = currentThemeColorId,
+                onThemeSettingsClick = { navController.navigateToThemeSettings() },
+                onFavoriteFeedsClick = { feedsViewModel.selectCategory(FAVORITES_CATEGORY) },
+                favoriteFeeds = favoritesViewModel.favoriteFeeds,
                 isProxyEnabled = isProxyEnabled,
                 onProxyToggle = {
                     // 切换代理启用状态
@@ -226,7 +227,9 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
         ) {
             // 确保使用最新的feeds数据，但要考虑播放器状态
             val currentFeedsState = feedsViewModel.feedsUiState
-            val baseFeeds = if (currentFeedsState is FeedsUiState.Success) {
+            val baseFeeds = if (sharedViewModel.detailEntryCategory == FAVORITES_CATEGORY) {
+                favoritesViewModel.favoriteFeeds
+            } else if (currentFeedsState is FeedsUiState.Success) {
                 currentFeedsState.feeds
             } else {
                 sharedViewModel.allFeeds
@@ -262,10 +265,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
             val selectedFeed = sharedViewModel.selectedFeed
             
             if (selectedFeed != null && allFeeds.isNotEmpty()) {
-                // 同步更新SharedViewModel中的allFeeds数据
-                if (currentFeedsState is FeedsUiState.Success) {
-                    sharedViewModel.updateAllFeeds(allFeeds)
-                }
+                sharedViewModel.updateAllFeeds(allFeeds)
                 
                 // 找到当前选中Feed在allFeeds中的索引
                 val initialIndex = sharedViewModel.getCurrentFeedIndex()
@@ -288,6 +288,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                         navController.popBackStack()
                     },
                     isDarkTheme = isDarkTheme,
+                    favoritesViewModel = favoritesViewModel,
                     onOpenWebView = { url, title ->
                         sharedViewModel.setWebViewData(url, title)
                         navController.navigateToWebView()
@@ -438,6 +439,13 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                 navController = navController,
                 settingsViewModel = settingsViewModel
             )
+        }
+        composable(
+            "themeSettings",
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() }
+        ) {
+            ThemeSettingsScreen(navController = navController)
         }
         composable(
             "blogSettings",

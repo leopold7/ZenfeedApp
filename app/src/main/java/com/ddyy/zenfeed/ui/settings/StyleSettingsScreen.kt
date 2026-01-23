@@ -78,7 +78,10 @@ fun StyleSettingsScreen(
     val scrollState = rememberScrollState()
     var tempStyleConfig by remember(uiState.styleConfig) { mutableStateOf(uiState.styleConfig) }
     var tempImageCacheEnabled by remember(uiState.imageCacheEnabled) { mutableStateOf(uiState.imageCacheEnabled) }
-    val hasChanges = tempStyleConfig.tagMaxLength != uiState.styleConfig.tagMaxLength || tempImageCacheEnabled != uiState.imageCacheEnabled
+    val hasChanges =
+        tempStyleConfig.tagMaxLength != uiState.styleConfig.tagMaxLength ||
+        tempStyleConfig.showPodcastCacheBadge != uiState.styleConfig.showPodcastCacheBadge ||
+        tempImageCacheEnabled != uiState.imageCacheEnabled
     var showExitDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.message) {
@@ -121,7 +124,10 @@ fun StyleSettingsScreen(
             ) {
                 SettingsBottomButtons(
                     onReset = {
-                        tempStyleConfig = tempStyleConfig.copy(tagMaxLength = 6)
+                        tempStyleConfig = tempStyleConfig.copy(
+                            tagMaxLength = 6,
+                            showPodcastCacheBadge = true
+                        )
                         tempImageCacheEnabled = SettingsDataStore.DEFAULT_IMAGE_CACHE_ENABLED
                     },
                     onSave = {
@@ -242,6 +248,54 @@ fun StyleSettingsScreen(
                         Switch(
                             checked = tempImageCacheEnabled,
                             onCheckedChange = { tempImageCacheEnabled = it },
+                            enabled = !uiState.isLoading
+                        )
+                    }
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "播客缓存标识",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = "在文章卡片中显示播客是否已缓存到本地（已缓存/未缓存）。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "显示缓存状态标识",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Switch(
+                            checked = tempStyleConfig.showPodcastCacheBadge,
+                            onCheckedChange = { checked ->
+                                tempStyleConfig = tempStyleConfig.copy(showPodcastCacheBadge = checked)
+                            },
                             enabled = !uiState.isLoading
                         )
                     }

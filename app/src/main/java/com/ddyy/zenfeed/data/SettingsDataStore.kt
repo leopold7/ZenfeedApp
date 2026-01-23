@@ -35,6 +35,7 @@ class SettingsDataStore(private val context: Context) {
         private val PROXY_USERNAME_KEY = stringPreferencesKey("proxy_username")
         private val PROXY_PASSWORD_KEY = stringPreferencesKey("proxy_password")
         private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+        private val PERSON_THEME_COLOR_KEY = stringPreferencesKey("person_theme_color")
         private val CHECK_UPDATE_ON_START_KEY = booleanPreferencesKey("check_update_on_start")
         private val UPDATE_BRANCH_KEY = stringPreferencesKey("update_branch")
         private val HOME_GROUPING_MODE_KEY = stringPreferencesKey("home_grouping_mode")
@@ -47,6 +48,9 @@ class SettingsDataStore(private val context: Context) {
         
         // 博客倍速播放相关的键
         private val PERSON_BLOG_PLAYBACK_SPEED_KEY = floatPreferencesKey("person_blog_playback_speed")
+
+        private val PERSON_BLOG_AUTO_DOWNLOAD_TO_LOCAL_KEY =
+            booleanPreferencesKey("person_blog_auto_download_to_local")
         
         // AI模型配置相关的键
         private val AI_API_URL_KEY = stringPreferencesKey("ai_api_url")
@@ -75,6 +79,7 @@ class SettingsDataStore(private val context: Context) {
 
         // 默认的主题设置
         const val DEFAULT_THEME_MODE = "system" // 可以是 "light", "dark", "system"
+        const val DEFAULT_THEME_COLOR = "teal"
         const val DEFAULT_CHECK_UPDATE_ON_START = true
         const val DEFAULT_UPDATE_BRANCH = "master" // 可以是 "master", "dev"
         
@@ -88,6 +93,8 @@ class SettingsDataStore(private val context: Context) {
         
         // 默认的博客倍速播放设置
         const val DEFAULT_PLAYBACK_SPEED = 1.0f // 默认1.0倍速
+
+        const val DEFAULT_BLOG_AUTO_DOWNLOAD_TO_LOCAL = true
         
         // 默认的AI模型配置
         const val DEFAULT_AI_API_URL = "https://api.openai.com/v1"
@@ -180,6 +187,15 @@ class SettingsDataStore(private val context: Context) {
         val themeMode: Flow<String> = context.settingsDataStore.data
             .map { preferences ->
                 preferences[THEME_MODE_KEY] ?: DEFAULT_THEME_MODE
+            }
+
+        /**
+         * 获取主题色的Flow
+         */
+        val themeColor: Flow<String> = context.settingsDataStore.data
+            .map { preferences ->
+                val color = preferences[PERSON_THEME_COLOR_KEY] ?: DEFAULT_THEME_COLOR
+                if (color == "default") DEFAULT_THEME_COLOR else color
             }
         
     /**
@@ -308,6 +324,11 @@ class SettingsDataStore(private val context: Context) {
             preferences[PERSON_BLOG_PLAYBACK_SPEED_KEY] ?: DEFAULT_PLAYBACK_SPEED
         }
 
+    val blogAutoDownloadToLocal: Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[PERSON_BLOG_AUTO_DOWNLOAD_TO_LOCAL_KEY] ?: DEFAULT_BLOG_AUTO_DOWNLOAD_TO_LOCAL
+        }
+
     /**
      * 获取标签最大显示长度的Flow
      */
@@ -381,6 +402,16 @@ class SettingsDataStore(private val context: Context) {
     suspend fun saveThemeMode(mode: String) {
         context.settingsDataStore.edit { preferences ->
             preferences[THEME_MODE_KEY] = mode
+        }
+    }
+
+    /**
+     * 保存主题色设置
+     * @param colorId 主题色ID
+     */
+    suspend fun saveThemeColor(colorId: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[PERSON_THEME_COLOR_KEY] = colorId
         }
     }
     
@@ -530,6 +561,12 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
+    suspend fun saveBlogAutoDownloadToLocal(enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[PERSON_BLOG_AUTO_DOWNLOAD_TO_LOCAL_KEY] = enabled
+        }
+    }
+
     /**
      * 保存标签最大显示长度
      * @param length 标签最大显示长度
@@ -598,6 +635,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[PROXY_USERNAME_KEY] = DEFAULT_PROXY_USERNAME
             preferences[PROXY_PASSWORD_KEY] = DEFAULT_PROXY_PASSWORD
             preferences[THEME_MODE_KEY] = DEFAULT_THEME_MODE
+            preferences[PERSON_THEME_COLOR_KEY] = DEFAULT_THEME_COLOR
             preferences[CHECK_UPDATE_ON_START_KEY] = DEFAULT_CHECK_UPDATE_ON_START
             preferences[UPDATE_BRANCH_KEY] = DEFAULT_UPDATE_BRANCH
             preferences[HOME_GROUPING_MODE_KEY] = DEFAULT_HOME_GROUPING_MODE
@@ -605,6 +643,7 @@ class SettingsDataStore(private val context: Context) {
             preferences[IMAGE_CACHE_ENABLED_KEY] = DEFAULT_IMAGE_CACHE_ENABLED
             preferences[MARK_PODCAST_AS_READ_KEY] = DEFAULT_MARK_PODCAST_AS_READ
             preferences[PERSON_BLOG_PLAYBACK_SPEED_KEY] = DEFAULT_PLAYBACK_SPEED
+            preferences[PERSON_BLOG_AUTO_DOWNLOAD_TO_LOCAL_KEY] = DEFAULT_BLOG_AUTO_DOWNLOAD_TO_LOCAL
             preferences[AI_API_URL_KEY] = DEFAULT_AI_API_URL
             preferences[AI_API_KEY_KEY] = DEFAULT_AI_API_KEY
             preferences[AI_MODEL_NAME_KEY] = DEFAULT_AI_MODEL_NAME

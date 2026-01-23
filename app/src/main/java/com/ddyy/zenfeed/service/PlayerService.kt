@@ -27,7 +27,10 @@ import com.ddyy.zenfeed.data.FaviconManager
 import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.FeedRepository
 import com.ddyy.zenfeed.data.PlaylistInfo
+import com.ddyy.zenfeed.data.FavoritesRepository
+import com.ddyy.zenfeed.data.BlogOfflineAudioCache
 import com.ddyy.zenfeed.data.SettingsDataStore
+import com.ddyy.zenfeed.data.toStableFeedId
 import com.ddyy.zenfeed.data.network.ApiClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +49,8 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
     private lateinit var faviconManager: FaviconManager
     private lateinit var feedRepository: FeedRepository
     private lateinit var settingsDataStore: SettingsDataStore
+    private lateinit var favoritesRepository: FavoritesRepository
+    private lateinit var offlineAudioCache: BlogOfflineAudioCache
     private var playlist: List<Feed> = emptyList()
     private var currentTrackIndex = -1
     private var isPrepared = false
@@ -117,6 +122,8 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
         faviconManager = FaviconManager(this)
         feedRepository = FeedRepository.getInstance(this)
         settingsDataStore = SettingsDataStore(this)
+        favoritesRepository = FavoritesRepository.getInstance(this)
+        offlineAudioCache = BlogOfflineAudioCache(this)
         
         // 初始化AudioManager
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -369,7 +376,8 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
         // 使用协程在后台下载媒体文件（支持代理）
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val localFile = downloadMediaFile(url)
+                val track = playlist.getOrNull(currentTrackIndex)
+                val localFile = resolvePlayableFile(url, track)
                 
                 // 在主线程设置MediaPlayer
                 withContext(Dispatchers.Main) {
@@ -483,6 +491,40 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
             
             localFile
         }
+    }
+
+    private suspend fun resolvePlayableFile(url: String, feed: Feed?): File {
+        if (url.isBlank()) throw Exception("播放地址为空")
+        if (feed == null) return downloadMediaFile(url)
+
+        val autoDownloadEnabled = settingsDataStore.blogAutoDownloadToLocal.first()
+        val isFavorited = favoritesRepository.isFavorited(feed)
+
+        val localPath = feed.labels.localPodcastPath.orEmpty()
+        if (localPath.isNotBlank()) {
+            val localFile = File(localPath)
+            if (localFile.exists() && localFile.length() > 0) return localFile
+        }
+
+        val offlineFile = offlineAudioCache.getLocalFileIfExists(url, feed.serverId)
+        if (offlineFile != null) return offlineFile
+
+        if (autoDownloadEnabled && isFavorited) {
+            try {
+                return offlineAudioCache.downloadIfNeeded(url, feed.serverId)
+            } catch (_: Exception) {
+            }
+        }
+
+        val tempFile = downloadMediaFile(url)
+        if (autoDownloadEnabled && isFavorited) {
+            try {
+                val offlineSaved = offlineAudioCache.saveFromExistingFile(url, feed.serverId, tempFile)
+                favoritesRepository.updateLocalPodcastPath(feed.toStableFeedId(), offlineSaved.absolutePath)
+            } catch (_: Exception) {
+            }
+        }
+        return tempFile
     }
 
     fun playNextTrack() {
@@ -1046,7 +1088,7 @@ class PlayerService : Service(), AudioManager.OnAudioFocusChangeListener {
             // 使用协程在后台预加载
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val localFile = downloadMediaFile(nextUrl)
+                    val localFile = resolvePlayableFile(nextUrl, nextFeed)
                     
                     // 在主线程设置预加载的MediaPlayer
                     withContext(Dispatchers.Main) {

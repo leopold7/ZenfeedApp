@@ -89,11 +89,13 @@ NavHost(
 | `FeedDetailScreen` | 展示文章详情 | HTML内容渲染、左右滑动切换、播客播放 |
 | `WebViewScreen` | 内置浏览器 | 网页加载、前进后退、分享功能 |
 | `SettingsScreen` | 设置页面 | API配置、代理设置、主题切换 |
+| `ThemeSettingsScreen` | 主题设置 | 主题模式切换、主题色选择与持久化 |
 | `MultiServerConfigScreen` | 多服务器配置 | 添加、编辑、删除、排序服务器配置 |
 | `FeedFilterSettingsScreen` | Feed过滤设置 | 设置Feed标题过滤关键词 |
 | `HomeGroupingSettingsScreen` | 首页分组设置 | 分类排序、显示配置、分组管理 |
 | `StyleSettingsScreen` | 样式设置 | 标签最大长度、文章显示图片 |
 | `BlogSettingsScreen` | 博客设置 | 听博客自动标记已读 |
+| `FavoriteFeedsScreen` | 我的收藏 | 收藏文章列表、一键清空、支持播客播放 |
 | `LoggingScreen` | 日志页面 | 展示应用日志、清除日志 |
 | `AboutScreen` | 关于页面 | 应用信息、版本号、开源协议 |
 
@@ -109,6 +111,7 @@ NavHost(
 **职责**：
 - 管理应用的主题样式
 - 支持浅色/深色/系统主题切换
+- 支持主题色（强调色）选择，并在暗黑模式下做可读性优化
 - 提供统一的色彩和排版规范
 
 **核心组件**：
@@ -116,7 +119,7 @@ NavHost(
 | 组件 | 职责 | 主要功能 |
 |------|------|----------|
 | `ZenfeedTheme` | 主题包装器 | 应用主题样式到子组件 |
-| `ThemeController` | 主题控制器 | 管理主题模式的切换和持久化 |
+| `ThemeController` | 主题控制器 | 管理主题模式/主题色的切换与持久化 |
 | `Color.kt` | 色彩定义 | 定义应用的色彩方案 |
 | `Type.kt` | 排版定义 | 定义应用的字体样式 |
 | `Theme.kt` | 主题配置 | 配置主题的各种属性 |
@@ -125,18 +128,10 @@ NavHost(
 
 ```kotlin
 // 在Compose中使用主题
-ZenfeedTheme(darkTheme = useDarkTheme) {
+ZenfeedTheme(darkTheme = useDarkTheme, themeColorId = themeColorId) {
     // 应用主题的子组件
     Surface {
         Text(text = "Hello, World!", style = MaterialTheme.typography.headlineMedium)
-    }
-}
-
-// 主题控制器使用
-val themeController = rememberThemeController(settingsDataStore)
-LaunchedEffect(Unit) {
-    themeController.themeMode.collect {mode ->
-        // 处理主题变化
     }
 }
 ```
@@ -523,10 +518,14 @@ fun BlogSettingsScreen(
 | `multiServerConfig` | `MultiServerConfigScreen` | 多服务器配置页面 |
 | `feedFilterSettings` | `FeedFilterSettingsScreen` | Feed过滤设置页面 |
 | `homeGroupingSettings` | `HomeGroupingSettingsScreen` | 首页分组设置页面 |
+| `themeSettings` | `ThemeSettingsScreen` | 主题设置页面 |
 | `styleSettings` | `StyleSettingsScreen` | 样式设置页面 |
 | `blogSettings` | `BlogSettingsScreen` | 博客设置页面 |
 | `logging` | `LoggingScreen` | 日志页面 |
 | `about` | `AboutScreen` | 关于页面 |
+
+**快捷入口**：
+- “我的收藏”通过首页左上角抽屉菜单（Drawer）进入；点击后会选中主页分类中的“我的收藏”（仅在存在收藏时显示），并位于分类列表最后。
 
 ### 3.2 导航动画
 

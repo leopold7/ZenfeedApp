@@ -72,7 +72,12 @@ fun String?.orDefaultSource(): String {
 /**
  * 生成主题化的HTML内容，适配深色/浅色模式
  */
-fun String.toThemedHtml(isDarkTheme: Boolean): String {
+fun String.toThemedHtml(
+    isDarkTheme: Boolean,
+    backgroundColor: String,
+    textColor: String,
+    linkColor: String
+): String {
     return if (isDarkTheme) {
         """
         <html>
@@ -249,16 +254,18 @@ fun String.toThemedHtml(isDarkTheme: Boolean): String {
         <html>
         <head>
             <style>
+                html, body {
+                    background-color: $backgroundColor !important;
+                    color: $textColor !important;
+                }
                 body {
-                    background-color: #FFFFFF;
-                    color: #000000;
                     font-family: sans-serif;
                     line-height: 1.6;
                     margin: 0;
                     padding: 0 16px;
                 }
                 a {
-                    color: #6650a4;
+                    color: $linkColor !important;
                 }
                 img {
                     max-width: 100%;
@@ -268,21 +275,51 @@ fun String.toThemedHtml(isDarkTheme: Boolean): String {
                     border-collapse: collapse;
                     width: 100%;
                     margin: 16px 0;
+                    background-color: transparent !important;
+                    background: transparent !important;
                 }
                 th, td {
                     border: 1px solid #dddddd;
                     padding: 8px 12px;
                     text-align: left;
+                    color: $textColor !important;
+                    background-color: transparent !important;
+                    background: transparent !important;
                 }
                 th {
-                    background-color: #f2f2f2;
+                    background-color: rgba(0,0,0,0.06) !important;
                     font-weight: bold;
                 }
                 tr:nth-child(even) {
-                    background-color: #f9f9f9;
+                    background-color: rgba(0,0,0,0.02) !important;
                 }
                 tr:hover {
-                    background-color: #f5f5f5;
+                    background-color: rgba(0,0,0,0.04) !important;
+                }
+
+                div, section, article, header, footer {
+                    background-color: transparent !important;
+                    background: transparent !important;
+                    background-image: none !important;
+                }
+
+                div[style*="background"][style*="white"],
+                div[style*="background"][style*="#fff"],
+                div[style*="background"][style*="#ffffff"] {
+                    background-color: transparent !important;
+                    background: transparent !important;
+                    background-image: none !important;
+                }
+
+                tr[style*="background"][style*="white"],
+                tr[style*="background"][style*="#fff"],
+                tr[style*="background"][style*="#ffffff"],
+                td[style*="background"][style*="white"],
+                td[style*="background"][style*="#fff"],
+                td[style*="background"][style*="#ffffff"] {
+                    background-color: transparent !important;
+                    background: transparent !important;
+                    background-image: none !important;
                 }
             </style>
         </head>

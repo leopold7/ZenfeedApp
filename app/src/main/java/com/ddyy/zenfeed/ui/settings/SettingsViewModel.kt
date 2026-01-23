@@ -39,6 +39,7 @@ data class SettingsUiState(
     val serverConfigs: List<ServerConfig> = emptyList(),
     val markPodcastAsRead: Boolean = true,
     val playbackSpeed: Float = 1.0f,
+    val blogAutoDownloadToLocal: Boolean = false,
     val titleFilterKeywords: String = "",
     val styleConfig: StyleConfig = StyleConfig(),
     val isLoading: Boolean = false,
@@ -75,6 +76,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var currentAiPrompt = ""
     private var currentMarkPodcastAsRead = true
     private var currentPlaybackSpeed = 1.0f
+    private var currentBlogAutoDownloadToLocal = false
     private var currentTitleFilterKeywords = ""
     private var currentStyleConfig = StyleConfig()
 
@@ -114,6 +116,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val aiPrompt = settingsDataStore.aiPrompt.first()
                 val markPodcastAsRead = settingsDataStore.markPodcastAsRead.first()
                 val playbackSpeed = settingsDataStore.playbackSpeed.first()
+                val blogAutoDownloadToLocal = settingsDataStore.blogAutoDownloadToLocal.first()
                 val titleFilterKeywords = settingsDataStore.titleFilterKeywords.first()
                 val styleConfig = settingsDataStore.styleConfig.first()
 
@@ -139,6 +142,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     aiPrompt = aiPrompt,
                     markPodcastAsRead = markPodcastAsRead,
                     playbackSpeed = playbackSpeed,
+                    blogAutoDownloadToLocal = blogAutoDownloadToLocal,
                     titleFilterKeywords = titleFilterKeywords,
                     styleConfig = styleConfig,
                     isLoading = false
@@ -183,6 +187,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
                 currentMarkPodcastAsRead = markPodcastAsRead
                 currentPlaybackSpeed = playbackSpeed
+                currentBlogAutoDownloadToLocal = blogAutoDownloadToLocal
                 currentTitleFilterKeywords = titleFilterKeywords
                 currentStyleConfig = styleConfig
                 currentThemeMode = themeMode
@@ -349,6 +354,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         currentPlaybackSpeed = speed
     }
 
+    fun updateBlogAutoDownloadToLocal(enabled: Boolean) {
+        currentBlogAutoDownloadToLocal = enabled
+    }
+
     /**
      * 更新标题过滤关键词
      * @param keywords 标题过滤关键词
@@ -424,9 +433,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 settingsDataStore.saveMarkPodcastAsRead(currentMarkPodcastAsRead)
                 settingsDataStore.savePlaybackSpeed(currentPlaybackSpeed)
+                settingsDataStore.saveBlogAutoDownloadToLocal(currentBlogAutoDownloadToLocal)
                 _uiState.value = _uiState.value.copy(
                     markPodcastAsRead = currentMarkPodcastAsRead,
-                    playbackSpeed = currentPlaybackSpeed
+                    playbackSpeed = currentPlaybackSpeed,
+                    blogAutoDownloadToLocal = currentBlogAutoDownloadToLocal
                 )
             } catch (e: Exception) {
                 showMessage("保存博客设置失败：${e.message}")
