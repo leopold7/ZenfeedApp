@@ -93,6 +93,7 @@ import com.ddyy.zenfeed.ui.feeds.components.list.ModernLoadingScreen
 import com.ddyy.zenfeed.ui.feeds.components.navigation.CategoryTabs
 import com.ddyy.zenfeed.ui.feeds.components.navigation.DrawerContent
 import com.ddyy.zenfeed.ui.player.PlayerViewModel
+import com.ddyy.zenfeed.ui.favorites.FAVORITES_CATEGORY
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -115,6 +116,8 @@ fun FeedsScreen(
     currentThemeMode: String = "system",
     currentThemeColorId: String = "default",
     onThemeSettingsClick: () -> Unit = {},
+    onFavoriteFeedsClick: () -> Unit = {},
+    favoriteFeeds: List<Feed> = emptyList(),
     isProxyEnabled: Boolean = false,
     onProxyToggle: () -> Unit = {},
 ) {
@@ -172,6 +175,8 @@ fun FeedsScreen(
         currentThemeMode = currentThemeMode,
         currentThemeColorId = currentThemeColorId,
         onThemeSettingsClick = onThemeSettingsClick,
+        onFavoriteFeedsClick = onFavoriteFeedsClick,
+        favoriteFeeds = favoriteFeeds,
         isProxyEnabled = isProxyEnabled,
         onProxyToggle = onProxyToggle,
         onTimeRangeSelected = { hours -> feedsViewModel.selectTimeRange(hours) },
@@ -228,6 +233,8 @@ fun FeedsScreenContent(
     currentThemeMode: String = "system",
     currentThemeColorId: String = "default",
     onThemeSettingsClick: () -> Unit = {},
+    onFavoriteFeedsClick: () -> Unit = {},
+    favoriteFeeds: List<Feed> = emptyList(),
     isProxyEnabled: Boolean = false,
     onProxyToggle: () -> Unit = {},
     onTimeRangeSelected: (Int) -> Unit,
@@ -279,14 +286,19 @@ fun FeedsScreenContent(
     val backPressThreshold = 2000L // 两次返回键间隔阈值（2秒）
 
     // Pager 状态
-    val pagerCategories =
-        (feedsUiState as? FeedsUiState.Success)?.let { listOf("") + it.categories } ?: listOf("")
+    val baseCategories = (feedsUiState as? FeedsUiState.Success)?.categories ?: emptyList()
+    val hasFavorites = favoriteFeeds.isNotEmpty()
+    val pagerCategories = listOf("") + baseCategories + (if (hasFavorites) listOf(FAVORITES_CATEGORY) else emptyList())
     val pagerState = rememberPagerState(pageCount = { pagerCategories.size })
 
     // 当 selectedCategory 改变时，滚动到对应的页面
     LaunchedEffect(selectedCategory, pagerCategories) {
         val page = pagerCategories.indexOf(selectedCategory)
-        if (page != -1 && page != pagerState.currentPage) {
+        if (page == -1) {
+            if (selectedCategory == FAVORITES_CATEGORY) {
+                onCategorySelected("")
+            }
+        } else if (page != pagerState.currentPage) {
             pagerState.animateScrollToPage(page)
         }
     }
@@ -423,6 +435,13 @@ fun FeedsScreenContent(
                     }
                     onAboutClick()
                 },
+                onFavoriteFeedsClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    onFavoriteFeedsClick()
+                },
+                showFavoriteFeeds = favoriteFeeds.isNotEmpty(),
                 currentThemeMode = currentThemeMode,
                 currentThemeColorId = currentThemeColorId,
                 onThemeSettingsClick = {
@@ -764,7 +783,7 @@ fun FeedsScreenContent(
                         // 分类 Tab
                         CategoryTabs(
                             pagerState = pagerState,
-                            categories = feedsUiState.categories,
+                            categories = baseCategories + (if (hasFavorites) listOf(FAVORITES_CATEGORY) else emptyList()),
                             onTabSelected = { page ->
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(page)
@@ -882,6 +901,8 @@ fun FeedsScreenContent(
                                 // 根据目标分类使用正确的列表（"全部"页面使用过滤后的列表，其他页面使用完整列表）
                                 val targetFeeds = if (targetCategory.isEmpty()) {
                                     allFeedsFiltered
+                                } else if (targetCategory == FAVORITES_CATEGORY) {
+                                    favoriteFeeds
                                 } else {
                                     categorizedFeeds[targetCategory] ?: emptyList()
                                 }
@@ -1041,6 +1062,8 @@ fun FeedsScreenContent(
                             // "全部"页面使用过滤后的文章列表，其他分组页面使用完整的文章列表
                             val feedsForCategory = if (category.isEmpty()) {
                                 allFeedsFiltered
+                            } else if (category == FAVORITES_CATEGORY) {
+                                favoriteFeeds
                             } else {
                                 categorizedFeeds[category] ?: emptyList()
                             }

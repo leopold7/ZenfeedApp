@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +40,8 @@ fun DrawerContent(
     modifier: Modifier = Modifier,
     onLoggingClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
+    onFavoriteFeedsClick: () -> Unit = {},
+    showFavoriteFeeds: Boolean = false,
     currentThemeMode: String = "system",
     currentThemeColorId: String = "default",
     onThemeSettingsClick: () -> Unit = {},
@@ -99,6 +102,15 @@ fun DrawerContent(
                 subtitle = themeSubtitle,
                 onClick = onThemeSettingsClick
             )
+
+            if (showFavoriteFeeds) {
+                MenuItemCard(
+                    icon = Icons.Default.Star,
+                    title = "我的收藏",
+                    subtitle = "查看我收藏的文章",
+                    onClick = onFavoriteFeedsClick
+                )
+            }
 
             // 代理切换菜单项
             MenuItemCard(

@@ -116,7 +116,8 @@ data class Labels(
     @SerializedName("summary_html_snippet") val summaryHtmlSnippet: String? = null, // Feed摘要的HTML片段
     @SerializedName("tags") val tags: String? = null, // Feed的标签信息
     @SerializedName("title") val title: String? = null, // Feed的标题
-    @SerializedName("type") val type: String? = null // Feed的类型(如rss、github_release等)
+    @SerializedName("type") val type: String? = null, // Feed的类型(如rss、github_release等)
+    val localPodcastPath: String? = null
 )
 
 /**
@@ -145,5 +146,6 @@ data class ServerConfig(
  * 样式配置数据模型
  */
 data class StyleConfig(
-    val tagMaxLength: Int = 6
+    val tagMaxLength: Int = 6,
+    val showPodcastCacheBadge: Boolean = true
 )

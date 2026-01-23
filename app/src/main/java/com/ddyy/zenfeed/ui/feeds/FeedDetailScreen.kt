@@ -4,14 +4,17 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +46,7 @@ import com.ddyy.zenfeed.data.Feed
 import com.ddyy.zenfeed.data.StyleConfig
 import com.ddyy.zenfeed.extension.orDefaultSource
 import com.ddyy.zenfeed.extension.orDefaultTitle
+import com.ddyy.zenfeed.ui.favorites.FavoritesViewModel
 import com.ddyy.zenfeed.ui.feeds.components.detail.FeedDetailPage
 import com.ddyy.zenfeed.ui.feeds.components.detail.TableFullScreen
 import com.ddyy.zenfeed.ui.player.PlayerViewModel
@@ -55,6 +60,7 @@ fun FeedDetailScreen(
     initialFeedIndex: Int = 0,
     onBack: () -> Unit,
     isDarkTheme: Boolean,
+    favoritesViewModel: FavoritesViewModel,
     onOpenWebView: (String, String) -> Unit = { _, _ -> },
     onPlayPodcastList: ((List<Feed>, Int) -> Unit)? = null,
     onFeedChanged: (Feed) -> Unit = {},
@@ -62,6 +68,10 @@ fun FeedDetailScreen(
     imageCacheEnabled: Boolean = true,
     styleConfig: StyleConfig = StyleConfig()
 ) {
+    LaunchedEffect(allFeeds.size) {
+        if (allFeeds.isEmpty()) onBack()
+    }
+
     // 如果没有feeds数据，显示空状态
     if (allFeeds.isEmpty()) {
         Scaffold(
@@ -182,30 +192,40 @@ fun FeedDetailScreen(
                     }
                 },
                 actions = {
-                    Box {
-                        IconButton(onClick = { menuExpanded = true }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val favorited = favoritesViewModel.isFavorited(currentFeed)
+                        IconButton(onClick = { favoritesViewModel.toggleFavorite(currentFeed) }) {
                             Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "更多选项"
+                                imageVector = if (favorited) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                contentDescription = if (favorited) "已收藏" else "收藏",
+                                tint = if (favorited) Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurface
                             )
                         }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("打开原网页") },
-                                onClick = {
-                                    menuExpanded = false
-                                    onOpenWebView(currentFeed.labels.link ?: "", currentFeed.labels.title.orDefaultTitle())
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.OpenInBrowser,
-                                        contentDescription = "打开原网页"
-                                    )
-                                }
-                            )
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "更多选项"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("打开原网页") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onOpenWebView(currentFeed.labels.link ?: "", currentFeed.labels.title.orDefaultTitle())
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.OpenInBrowser,
+                                            contentDescription = "打开原网页"
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
