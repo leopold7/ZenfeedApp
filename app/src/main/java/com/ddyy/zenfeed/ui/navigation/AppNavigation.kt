@@ -54,6 +54,7 @@ import com.ddyy.zenfeed.extension.defaultEnterTransition
 import com.ddyy.zenfeed.extension.defaultExitTransition
 import com.ddyy.zenfeed.extension.defaultPopEnterTransition
 import com.ddyy.zenfeed.extension.defaultPopExitTransition
+import com.ddyy.zenfeed.extension.groupByMode
 import com.ddyy.zenfeed.extension.navigateToSettings
 import com.ddyy.zenfeed.extension.navigateToWebView
 import com.ddyy.zenfeed.extension.navigateToLogging
@@ -143,16 +144,27 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
             FeedsScreen(
                 feedsViewModel = feedsViewModel,
                 onFeedClick = { feed ->
-                    // 先保存当前的feeds列表到SharedViewModel
+                    val entryCategory = feedsViewModel.selectedCategory
                     val currentFeedsState = feedsViewModel.feedsUiState
-                    if (feedsViewModel.selectedCategory == FAVORITES_CATEGORY) {
-                        sharedViewModel.updateAllFeeds(favoritesViewModel.favoriteFeeds)
-                    } else if (currentFeedsState is FeedsUiState.Success) {
-                        sharedViewModel.updateAllFeeds(currentFeedsState.feeds)
+                    val entryFeeds = when {
+                        entryCategory == FAVORITES_CATEGORY -> favoritesViewModel.favoriteFeeds
+                        currentFeedsState is FeedsUiState.Success -> {
+                            if (entryCategory.isEmpty()) {
+                                currentFeedsState.allFeeds
+                            } else {
+                                currentFeedsState
+                                    .feeds
+                                    .groupByMode(feedsViewModel.groupingMode)[entryCategory]
+                                    ?: emptyList()
+                            }
+                        }
+                        else -> sharedViewModel.allFeeds
                     }
-                    // 记录进入详情页时的分类
-                    Log.d("AppNavigation", "进入详情页，分类: ${feedsViewModel.selectedCategory}, 文章: ${feed.labels.title}")
-                    sharedViewModel.setEntryCategory(feedsViewModel.selectedCategory)
+
+                    sharedViewModel.updateAllFeeds(entryFeeds)
+
+                    Log.d("AppNavigation", "进入详情页，分类: $entryCategory, 文章: ${feed.labels.title}")
+                    sharedViewModel.setEntryCategory(entryCategory)
                     // 然后选择Feed（这样getCurrentFeedIndex能找到正确的索引）
                     sharedViewModel.selectFeed(feed)
                     // 设置初始的最后浏览文章
@@ -226,13 +238,19 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
             popExitTransition = { defaultPopExitTransition() }
         ) {
             // 确保使用最新的feeds数据，但要考虑播放器状态
+            val entryCategory = sharedViewModel.detailEntryCategory
             val currentFeedsState = feedsViewModel.feedsUiState
-            val baseFeeds = if (sharedViewModel.detailEntryCategory == FAVORITES_CATEGORY) {
-                favoritesViewModel.favoriteFeeds
-            } else if (currentFeedsState is FeedsUiState.Success) {
-                currentFeedsState.feeds
-            } else {
-                sharedViewModel.allFeeds
+            val baseFeeds = when {
+                entryCategory == FAVORITES_CATEGORY -> favoritesViewModel.favoriteFeeds
+                currentFeedsState is FeedsUiState.Success -> {
+                    if (entryCategory.isEmpty()) {
+                        currentFeedsState.allFeeds
+                    } else {
+                        currentFeedsState.feeds.groupByMode(feedsViewModel.groupingMode)[entryCategory]
+                            ?: emptyList()
+                    }
+                }
+                else -> sharedViewModel.allFeeds
             }
             
             // 获取播放器状态，检查是否有正在播放的内容
@@ -240,7 +258,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
             val isPlaying = playerViewModel.isPlaying.value
             
             // 构建详情页要显示的feeds列表
-            val allFeeds = if (isPlaying == true && playlistInfo != null && playlistInfo.totalCount > 0) {
+            val allFeeds = if (entryCategory.isEmpty() && isPlaying == true && playlistInfo != null && playlistInfo.totalCount > 0) {
                 // 如果正在播放播客，确保包含播放列表中的所有文章
                 val playerPlaylist = playerViewModel.getCurrentPlaylist()
                 val mergedFeeds = mutableListOf<Feed>()
@@ -317,10 +335,7 @@ fun AppNavigation(sharedViewModel: SharedViewModel) {
                         feedsViewModel.markFeedAsRead(newFeed)
                         
                         // 同步更新SharedViewModel中的allFeeds，以反映已读状态的变化
-                        val currentFeedsState = feedsViewModel.feedsUiState
-                        if (currentFeedsState is FeedsUiState.Success) {
-                            sharedViewModel.updateAllFeeds(currentFeedsState.feeds)
-                        }
+                        sharedViewModel.updateAllFeeds(allFeeds)
                     },
                     category = sharedViewModel.detailEntryCategory,
                     imageCacheEnabled = feedsViewModel.imageCacheEnabled,
