@@ -81,7 +81,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     // 当前选中的时间范围（小时）
-    var selectedTimeRangeHours: Int by mutableStateOf(24) // 默认24小时
+    var selectedTimeRangeHours: Int by mutableStateOf(SettingsDataStore.DEFAULT_HOME_FEED_TIME_RANGE_HOURS)
         private set
 
     // 当前的搜索查询
@@ -123,6 +123,8 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     var styleConfig: com.ddyy.zenfeed.data.StyleConfig by mutableStateOf(com.ddyy.zenfeed.data.StyleConfig())
         private set
 
+    private var initialLoadCompleted: Boolean = false
+
     // 监听分组模式变化，更新Feed列表
     private val _groupingModeFlow = MutableStateFlow(groupingMode)
     
@@ -133,6 +135,18 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
+        viewModelScope.launch {
+            settingsDataStore.homeFeedTimeRangeHours.collect { hours ->
+                if (selectedTimeRangeHours != hours) {
+                    selectedTimeRangeHours = hours
+                    if (initialLoadCompleted) {
+                        getFeeds(forceRefresh = true)
+                    }
+                    Log.d("FeedsViewModel", "时间范围已更新为: $hours 小时")
+                }
+            }
+        }
+
         // 持续监听分组模式变化
         viewModelScope.launch {
             settingsDataStore.homeGroupingMode.collect {
@@ -222,6 +236,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             val initialServerConfigs = settingsDataStore.serverConfigs.first()
             val initialTitleFilterKeywords = settingsDataStore.titleFilterKeywords.first()
             val initialStyleConfig = settingsDataStore.styleConfig.first()
+            val initialTimeRangeHours = settingsDataStore.homeFeedTimeRangeHours.first()
 
             categoryFilterConfigs = initialConfigs
             groupingMode = initialGroupingMode
@@ -229,6 +244,7 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             serverConfigs = initialServerConfigs
             titleFilterKeywords = initialTitleFilterKeywords
             styleConfig = initialStyleConfig
+            selectedTimeRangeHours = initialTimeRangeHours
             _groupingModeFlow.value = initialGroupingMode
 
             Log.d("FeedsViewModel", "初始分类过滤配置已加载: ${initialConfigs.size} 个配置")
@@ -237,11 +253,13 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
             Log.d("FeedsViewModel", "初始服务器配置已加载: ${initialServerConfigs.size} 个服务器")
             Log.d("FeedsViewModel", "初始标题过滤关键词已加载: $initialTitleFilterKeywords")
             Log.d("FeedsViewModel", "初始样式配置已加载: $initialStyleConfig")
+            Log.d("FeedsViewModel", "初始时间范围已加载: $initialTimeRangeHours 小时")
 
             loadReadFeedIds()
             loadSearchHistory()
             loadCachedFeeds()
             updateCacheSize()
+            initialLoadCompleted = true
             getFeeds()
         }
     }
@@ -405,10 +423,9 @@ class FeedsViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun selectTimeRange(hours: Int) {
         if (selectedTimeRangeHours != hours) {
-            selectedTimeRangeHours = hours
-            // 强制刷新数据
-            getFeeds(forceRefresh = true)
-            Log.d("FeedsViewModel", "时间范围已更改为: $hours 小时")
+            viewModelScope.launch {
+                settingsDataStore.saveHomeFeedTimeRangeHours(hours)
+            }
         }
     }
 

@@ -300,6 +300,10 @@ UI → ViewModel → SettingsDataStore.saveXXX() → DataStore → 持久化存�
 DataStore → SettingsDataStore.XXX → Flow → ViewModel → UI
 ```
 
+补充：主页“全部”页的时间范围（如“一天内/三天内”）也通过 DataStore 持久化（默认 24 小时），用于：
+- 渲染下拉菜单的选中状态
+- 构建 Feed 查询请求的时间窗口（start/end）
+
 ## 4. 缓存策略
 
 ### 4.1 缓存机制

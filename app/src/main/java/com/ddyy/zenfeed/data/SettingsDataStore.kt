@@ -39,6 +39,7 @@ class SettingsDataStore(private val context: Context) {
         private val CHECK_UPDATE_ON_START_KEY = booleanPreferencesKey("check_update_on_start")
         private val UPDATE_BRANCH_KEY = stringPreferencesKey("update_branch")
         private val HOME_GROUPING_MODE_KEY = stringPreferencesKey("home_grouping_mode")
+        private val HOME_FEED_TIME_RANGE_HOURS_KEY = intPreferencesKey("home_feed_time_range_hours")
         private val CATEGORY_FILTER_CONFIGS_KEY = stringPreferencesKey("category_filter_configs")
         private val IMAGE_CACHE_ENABLED_KEY = booleanPreferencesKey("image_cache_enabled")
         private val SERVER_CONFIGS_KEY = stringPreferencesKey("server_configs")
@@ -85,6 +86,7 @@ class SettingsDataStore(private val context: Context) {
         
         // 默认的首页分组模式设置
         const val DEFAULT_HOME_GROUPING_MODE = "category" // 可以是 "category", "source", "category,source", "none"
+        const val DEFAULT_HOME_FEED_TIME_RANGE_HOURS = 24
         
         const val DEFAULT_IMAGE_CACHE_ENABLED = true // 是否文章显示图片
         
@@ -260,6 +262,11 @@ class SettingsDataStore(private val context: Context) {
     val homeGroupingMode: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
             preferences[HOME_GROUPING_MODE_KEY] ?: DEFAULT_HOME_GROUPING_MODE
+        }
+
+    val homeFeedTimeRangeHours: Flow<Int> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[HOME_FEED_TIME_RANGE_HOURS_KEY] ?: DEFAULT_HOME_FEED_TIME_RANGE_HOURS
         }
     
     /**
@@ -506,6 +513,13 @@ class SettingsDataStore(private val context: Context) {
     suspend fun saveHomeGroupingMode(mode: String) {
         context.settingsDataStore.edit { preferences ->
             preferences[HOME_GROUPING_MODE_KEY] = mode
+        }
+    }
+
+    suspend fun saveHomeFeedTimeRangeHours(hours: Int) {
+        val sanitizedHours = hours.takeIf { it > 0 } ?: DEFAULT_HOME_FEED_TIME_RANGE_HOURS
+        context.settingsDataStore.edit { preferences ->
+            preferences[HOME_FEED_TIME_RANGE_HOURS_KEY] = sanitizedHours
         }
     }
     
